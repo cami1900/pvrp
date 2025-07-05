@@ -1,0 +1,229 @@
+
+
+def assign_to_1_vehicle_algorithm(n_vehicles, n_days, vehicle_capacity, sorted_data, distance_matrix):
+    """
+    Assigns customers to vehicles daily routes by searching the optimal set of routes 
+        for a fleet of vehicles that must collect the garbage from a set of customers. 
+
+    Args:
+        - sorted_data (matrix): A sorted customers' data matrix.
+        - distance_matrix (matrix): A Manhattan distances matrix between customers, depot included.
+
+    Returns:
+        - Assigned customers matrix: contains the assigned customers lists
+        - Transported demand matrix: 
+        - Route distances matrix
+        - Not assigned customers list: a list of all the customers the have not been assigned.
+
+    Notes:
+        - 
+    """
+    
+    # Create a zero Assigned customers matrix 
+    assigned_cust_matrix = [[[0] for _ in range(n_days)] for _ in range(n_vehicles)] 
+    # Create a Not assigned customers list
+    not_assigned_list = []
+    # Create a zero Transported demand matrix
+    transp_demand_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+    # Create a zero Route distances matrix
+    route_dist_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+
+
+
+    for client_i in range(1, len(sorted_data)):  # skip the depot   len(sort_data)
+
+        # Add client i to all the lists
+        index_client_i = int(sorted_data[client_i][conf.CLIENT_ID_INDEX])
+        for vehicle_k in range(n_vehicles):
+            for day_t in range(n_days):
+                assigned_cust_matrix[vehicle_k][day_t].append(index_client_i)
+        print("\n\n\nclient id:", index_client_i)
+
+        # Calculate the Transported demand matrix
+        demand_i = int(sorted_data[client_i][conf.DEMAND_INDEX])
+        for vehicle_k in range(n_vehicles):
+            for day_t in range(n_days):
+                transp_demand_matrix[vehicle_k][day_t] += demand_i
+        print("DEMAND matrix:", transp_demand_matrix)
+
+        # Create the Possible assignation matrix
+        possibl_assign_matrix = transp_demand_matrix - vehicle_capacity  
+        for vehicle_k in range(n_vehicles):
+            for day_t in range(n_days):
+                if possibl_assign_matrix[vehicle_k][day_t] <= 0:
+                    possibl_assign_matrix[vehicle_k][day_t] = 1
+                else: 
+                    possibl_assign_matrix[vehicle_k][day_t] = 0
+        print("ASSIGNATION matrix", possibl_assign_matrix)
+        
+
+        # Create the Visit combinations matrix
+        n_visit_comb_i = int(sorted_data[client_i][conf.N_VISIT_INDEX])
+        visit_comb_matrix = np.zeros((n_days, n_visit_comb_i), dtype=int)
+        for schedule in range(n_visit_comb_i):
+            binary_str = format(int(sorted_data[client_i][conf.VISIT_START_INDEX + schedule]), '05b')
+            binary_list = [int(bit) for bit in binary_str]
+            for day_t in range(n_days):
+                visit_comb_matrix[day_t][schedule] = binary_list[day_t]
+        print("COMBINATION matrix", visit_comb_matrix)
+
+        # Create the Frequencies-schedules matrix 
+        freq_sched_matrix = np.dot(possibl_assign_matrix,visit_comb_matrix)
+        # Check minimum frequency required for clinet i
+        min_freq_i = int(sorted_data[client_i][conf.FREQ_VISIT_INDEX])
+        if not np.any(freq_sched_matrix >= min_freq_i):
+            # Add client i to the list of not assigned clients
+            not_assigned_list.append(index_client_i)
+            # Remove client i from all the lists of the Assigned customers matrix
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    del assigned_cust_matrix[vehicle_k][day_t][-1]
+            # Delate the demand of client i from the Transported demand matrix
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    transp_demand_matrix[vehicle_k][day_t] -= demand_i
+            continue  # go to the next client i+1
+        else:
+            # OTHERWISE (there is at least one vehicle that can meet the required frequency for at least one of the possible schedules)
+            # Update the matrices:
+            for schedule_s in range(freq_sched_matrix.shape[1]):  
+                if not np.any(freq_sched_matrix[:, schedule_s] == min_freq_i):
+                    freq_sched_matrix[:, schedule_s] = 0
+                    visit_comb_matrix[:, schedule_s] = 0  
+
+            for vehicle_v in range(freq_sched_matrix.shape[0]):  
+                if not np.any(freq_sched_matrix[vehicle_v, :] == min_freq_i):
+                    freq_sched_matrix[vehicle_v, :] = 0
+                    possibl_assign_matrix[vehicle_v, :] = 0 
+
+            for day_t in range(visit_comb_matrix.shape[0]):  
+                if not np.any(visit_comb_matrix[day_t, :] == 1):
+                    possibl_assign_matrix[:, day_t] = 0
+            print("FREQ-SCHED matrix", freq_sched_matrix)
+
+            # Calculate all the route_distances for the possible assignations
+            possible_dist_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+            routes_matrix = [[[0] for _ in range(n_days)] for _ in range(n_vehicles)]
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    if index_client_i == 27:
+                        print("stop")
+
+# !!!!!!!!!!!!!!!!!!!!!!!!! CHECK THIS PART !!!!!!!!!!!!!!!!!!!!!!!!!
+
+                    if possibl_assign_matrix[vehicle_k][day_t] != 0:    # compute distance
+                        client_list = assigned_cust_matrix[vehicle_k][day_t]
+                        distance_submatrix = distance_matrix[np.ix_(client_list, client_list)]
+                        client_index_memo = {i: client_list[i] for i in range(len(client_list))}
+                        clients = list(range(1, len(distance_submatrix)))
+                        min_distance = float('inf')
+                        best_route = []
+                        for perm in itertools.permutations(clients):
+                            route = [0] + list(perm) + [0]
+                            distance = sum(distance_submatrix[route[i]][route[i+1]] for i in range(len(route)-1))
+                            if distance < min_distance:
+                                min_distance = distance
+                                best_route = route
+                                # uddate the
+                        possible_dist_matrix[vehicle_k][day_t] = min_distance
+                        translated_route = [client_index_memo[i] for i in best_route]
+                        routes_matrix[vehicle_k][day_t] = translated_route
+
+            # Define the Frequencies-schedules matrix 
+            sched_dist_matrix = np.dot(possible_dist_matrix,visit_comb_matrix)
+            # Find the winning combination
+            # dist_not_zero = sched_dist_matrix != 0
+            # possible_sched_dist_matrix = sched_dist_matrix[dist_not_zero]
+
+            '''
+            sched_dist_matrix = [2, 4, 0, 1, 0]
+            dist_not_zero = sched_dist_matrix != 0  
+                --> dist_not_zero = [True, True, False, True, False]
+                --> dist_not_zero = [1, 1, 0, 1, 0]
+            
+            possible_sched_dist_matrix = sched_dist_matrix[dist_not_zero]
+                --> possible_sched_dist_matrix = [4, 4, 2, 4, 2]
+                --> possible_sched_dist_matrix = [2, 4, 1]
+            
+            '''
+
+            # if sched_dist_matrix.size == 0:
+            # There are not valid combinations!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     not_assigned_list.append(index_client_i)
+            #     for vehicle_k in range(n_vehicles):
+            #         for day_t in range(n_days):
+            #             del assigned_cust_matrix[vehicle_k][day_t][-1]
+            #             transp_demand_matrix[vehicle_k][day_t] -= demand_i
+
+            #     Add client i to the list of not assigned clients
+            #     not_assigned_list.append(index_client_i)
+            #     Remove client i from all the lists of the Assigned customers matrix
+            #     for vehicle_k in range(n_vehicles):
+            #         for day_t in range(n_days):
+            #             del assigned_cust_matrix[vehicle_k][day_t][-1]
+            #     Delate the demand of client i from the Transported demand matrix
+            #     for vehicle_k in range(n_vehicles):
+            #         for day_t in range(n_days):
+            #             transp_demand_matrix[vehicle_k][day_t] -= demand_i
+
+            #     continue
+            # else:
+            min_dist_comb = np.min(sched_dist_matrix[np.nonzero(sched_dist_matrix)])
+            row_column = np.where(sched_dist_matrix == min_dist_comb)
+            preferable_comb = list(zip(row_column[0], row_column[1]))
+            
+            random.seed(1234)
+            winning_comb = np.array([list(random.choice(preferable_comb))])
+            
+            # winning_comb = np.array([list(random.choice(preferable_comb))])
+            winning_vehicle = winning_comb[0][0]
+            winning_schedule = winning_comb[0][1]
+            # Update matrices
+            # Remove client i from all the lists of the Assigned customers matrix, excluding the winning combination
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    del assigned_cust_matrix[vehicle_k][day_t][-1]
+
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    if vehicle_k == winning_vehicle and visit_comb_matrix[day_t][winning_schedule] == 1:
+                        assigned_cust_matrix[vehicle_k][day_t].append(index_client_i)
+            
+            # Update route distances matrix
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    if vehicle_k == winning_vehicle and visit_comb_matrix[day_t][winning_schedule] == 1:
+                        route_dist_matrix[vehicle_k][day_t] = possible_dist_matrix[vehicle_k][day_t]
+
+            # Remove demand
+            for vehicle_k in range(n_vehicles):
+                for day_t in range(n_days):
+                    if vehicle_k != winning_vehicle or visit_comb_matrix[day_t][winning_schedule] != 1:
+                        transp_demand_matrix[vehicle_k][day_t] -= demand_i
+
+            # print("best route:", routes_matrix[winning_vehicle])
+    
+    # FINAL OPTIMIZATION:
+    # final_DISTANCES_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+    # final_ROUTES_matrix = [[[0] for _ in range(n_days)] for _ in range(n_vehicles)]
+    # for vehicle_k in range(n_vehicles):
+    #             for day_t in range(n_days):
+    #                 client_list = assigned_cust_matrix[vehicle_k][day_t]
+    #                 distance_submatrix = distance_matrix[np.ix_(client_list, client_list)]
+    #                 client_index_memo = {i: client_list[i] for i in range(len(client_list))}
+    #                 clients = list(range(1, len(distance_submatrix)))
+    #                 min_distance = float('inf')
+    #                 best_route = []
+    #                 for perm in itertools.permutations(clients):
+    #                     route = [0] + list(perm) + [0]
+    #                     distance = sum(distance_submatrix[route[i]][route[i+1]] for i in range(len(route)-1))
+    #                     if distance < min_distance:
+    #                         min_distance = distance
+    #                         best_route = route
+    #                         # uddate the matrices
+    #                     final_DISTANCES_matrix[vehicle_k][day_t] = min_distance
+    #                     translated_route = [client_index_memo[i] for i in best_route]
+    #                     final_ROUTES_matrix[vehicle_k][day_t] = translated_route
+
+
+    return (assigned_cust_matrix, transp_demand_matrix, route_dist_matrix, not_assigned_list)
