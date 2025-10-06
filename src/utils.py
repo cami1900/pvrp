@@ -4,6 +4,9 @@ import itertools
 import random
 import conf
 import copy
+import os
+import openpyxl
+from openpyxl import Workbook, load_workbook
 
 
 ''' DATA PREPARATION and data display '''
@@ -743,6 +746,8 @@ def calculate_kd_clients(data, vehicle_capacity):
         else:
             break
     
+    max_clients_kd += max_clients_kd
+
     return max_clients_kd
 
 
@@ -796,3 +801,164 @@ def save_results_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_
 
     return '\n'.join(lines)
 
+
+
+def save_vnd_results_in_excel(
+        filename, 
+        repetitions_VND, time_limit_VND, neigh_order, max_iteration_neigh, worse_sol_neigh, worse_sol_percentage,
+        total_time, total_iteration, initial_sol, best_sol_OBJ, all_solutions_VND):
+
+    # # Crea nuovo file Excel
+    # wb = Workbook()
+
+    # # --- Foglio 1: Parametri e Risultati ---
+    # ws1 = wb.active
+    # ws1.title = "Run_Info"
+
+    # # Input
+    # ws1.append(["INPUT"])
+    # ws1.append(["repetitions_VND"] + repetitions_VND)
+    # ws1.append(["time_limit_VND", time_limit_VND])
+    # ws1.append(["neigh_order"] + neigh_order)
+    # ws1.append(["max_iteration_neigh", max_iteration_neigh])
+    # ws1.append(["worse_sol_neigh", worse_sol_neigh])
+    # ws1.append(["worse_sol_percentage", worse_sol_percentage])
+
+    # # Riga vuota
+    # ws1.append([])
+
+    # # Output
+    # ws1.append(["OUTPUT"])
+    # ws1.append(["total_time", total_time])
+    # ws1.append(["total_iteration", total_iteration])
+    # ws1.append(["initial_sol", initial_sol])
+    # ws1.append(["best_sol_OBJ", best_sol_OBJ])
+
+    # # --- Foglio 2: Tutte le soluzioni ---
+    # ws2 = wb.create_sheet(title="All_Solutions")
+    # ws2.append(["repetition", "iteration", "solution_OBJ"])
+
+    # ## unpack data
+    # initial_sol = all_solutions_VND[0]
+    # data = all_solutions_VND[1::]
+    # print(data)
+    # for rep_list in data:
+    #     for rep, it, obj in rep_list:
+    #         ws2.append([rep, it, obj])
+
+    # # Salva il file
+    # wb.save(filename)
+    # print(f"File salvato: {filename}")
+
+    # === Workbook e Foglio 1 ===
+    wb = Workbook()
+    ws1 = wb.active
+    ws1.title = "Run_Info"
+
+    def _write_row(name, value):
+        # nome in colonna A; se value è lista/tupla, espandi nelle colonne successive
+        if isinstance(value, (list, tuple)):
+            ws1.append([name, *value])
+        else:
+            ws1.append([name, value])
+
+    # INPUT
+    ws1.append(["INPUT"])
+    _write_row("repetitions_VND", repetitions_VND)
+    _write_row("time_limit_VND", time_limit_VND)
+    _write_row("neigh_order", neigh_order)
+    _write_row("max_iteration_neigh", max_iteration_neigh)
+    _write_row("worse_sol_neigh", "random")
+    _write_row("worse_sol_percentage", worse_sol_percentage)
+
+    ws1.append([])  # riga vuota
+
+    # OUTPUT
+    ws1.append(["OUTPUT"])
+    _write_row("total_time", total_time)
+    _write_row("total_iteration", total_iteration)
+    _write_row("initial_sol", initial_sol)
+    _write_row("best_sol_OBJ", best_sol_OBJ)
+
+    # === Foglio 2: All_Solutions ===
+    ws2 = wb.create_sheet(title="All_Solutions")
+    ws2.append(["repetition", "iteration", "solution_OBJ"])
+
+    ## unpack data
+    initial_sol = all_solutions_VND[0]
+    data = all_solutions_VND[1::]
+    # data = [[(rep,it,obj), ...], [(rep,it,obj), ...], ...]
+    for group in data:
+        if not isinstance(group, (list, tuple)):
+            continue
+        for item in group:
+            if isinstance(item, (list, tuple)) and len(item) == 3:
+                rep, it, obj = item
+                # cast per evitare np.int64 / np.float64
+                ws2.append([int(rep), int(it), float(obj)])
+
+    # Salva file .xlsx
+    wb.save(filename)
+
+    # Verifica che sia un vero Excel ricaricandolo
+    _ = load_workbook(filename)  # se non è xlsx valido, qui solleverà errore
+    return filename
+
+
+
+def plot_VND_graph(all_solutions_VND, imgname):
+
+    """
+    Crea un grafico dell'andamento della funzione obiettivo per il VND,
+    mostrando sia le iterations per repetition che quelle cumulative.
+
+    Parametri
+    ----------
+    all_solutions_VND : list of tuple
+        [(iter_in_rep, iter_total, obj_value), ...]
+    """
+
+    ## unpack data
+    initial_sol = all_solutions_VND[0]
+    data = all_solutions_VND[1::]
+
+    obj_values = []
+    iter_total = []
+    repetition_index = []
+    iter_index = 0
+
+    obj_values.append(initial_sol)
+    iter_total.append(iter_index)
+
+    for repetition in data:
+        for sol in repetition:
+            ## plot x-axis
+            iter_index += sol[1]
+            iter_total.append(iter_index)
+            
+            ## plot y-axis
+            obj_values.append(sol[2])
+        
+        ## plot repetition vertical lines
+        repetition_index.append(len(iter_total)-1)        
+
+    ## plot the iter total on the x-axis, the obj_values on the y-axis. plot vertical lines of repetition_index
+     # Plot objective values vs total iterations
+    plt.figure(figsize=(17, 6))
+    plt.plot(iter_total, obj_values, marker='o', label='Objective Value')
+
+    # Add vertical lines to mark the end of each repetition
+    for idx in repetition_index:
+        plt.axvline(x=iter_total[idx], color='r', linestyle='--', alpha=0.5)
+
+    plt.xlabel('Total Iterations')
+    plt.ylabel('Objective Value')
+    plt.title('VND Objective Function Progression')
+    plt.legend()
+    plt.grid(True)
+
+    # Salva automaticamente il grafico
+    plt.savefig(imgname, dpi=300, bbox_inches="tight")
+    plt.close()  # chiude la figura per evitare conflitti
+
+    return

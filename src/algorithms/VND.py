@@ -17,295 +17,471 @@ import time
 ''' VND ALGORITHM '''
 
 
-def VND_algorithm(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution):
+# def VND_algorithm(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution):
 
-    neighbour = 0
-    n_neighbour = 4
-    # max_iteration_neigh = np.array([1, 2, 2, 2, 2])
-    # max_iteration_neigh = np.array([0, 0, 0, 0, 200])
-    max_iteration_neigh = np.array([50, 50, 50, 50, 50])
-    # max_iteration_neigh = np.array([100, 100, 100, 100, 100])
-    # max_iteration_neigh = np.array([200, 200, 200, 200, 20])
-    time_limit_neigh = 120
-    time_limit_VND = 300
+#     neighbour = 0
+#     n_neighbour = 4
+#     # max_iteration_neigh = np.array([1, 2, 2, 2, 2])
+#     # max_iteration_neigh = np.array([0, 0, 0, 0, 200])
+#     max_iteration_neigh = np.array([50, 50, 50, 50, 50])
+#     # max_iteration_neigh = np.array([100, 100, 100, 100, 100])
+#     # max_iteration_neigh = np.array([200, 200, 200, 200, 20])
+#     time_limit_neigh = 120
+#     time_limit_VND = 300
     
-    iteration = 0
-    value_SEED = 0
-    random.seed(value_SEED)
-    start_time = time.process_time()
-    start_time_VND = time.process_time()
+#     iteration = 0
+#     value_SEED = 0
+#     random.seed(value_SEED)
+#     start_time = time.process_time()
+#     start_time_VND = time.process_time()
 
-    clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+#     clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
 
 
-    while neighbour <= n_neighbour:
+#     while neighbour <= n_neighbour:
 
-        if (time.process_time() - start_time_VND) > time_limit_VND:
-            neighbour = 5
-            break
+#         if (time.process_time() - start_time_VND) > time_limit_VND:
+#             neighbour = 5
+#             break
 
-        if neighbour == 0:
-            if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
-                iteration = 0
-                neighbour += 1
-                start_time = time.process_time()
-                continue
+#         if neighbour == 0:
+#             if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
+#                 iteration = 0
+#                 neighbour += 1
+#                 start_time = time.process_time()
+#                 continue
 
-            # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution, error_index) = \
-                k_move_t(
-                    n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
-            # initial_comb.print()
-            # final_comb.print()
-            # new_solution.print()
+#             # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution, error_index) = \
+#                 k_move_t(
+#                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+#             # initial_comb.print()
+#             # final_comb.print()
+#             # new_solution.print()
 
-            # if the OBJ of new solution is better than the one of current solution: 
-            if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
-                # verify is new solution is feasible
-                V_distances_matrix, V_loads_matrix, new_solution = \
-                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
-                # if new solution is feasible:
-                if new_solution.feasibility_vector.verify() == True:
-                    current_solution = copy.copy(new_solution)  # udate current solution
-                    print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                    print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                    print("time", (time.process_time() - start_time))
-                    # current_solution.print()
-                    # iteration +=1
-                    iteration = 0
-                    # start_time = time.process_time()
-                iteration +=1
-            else:
-                iteration += 1
-                continue
+#             # if the OBJ of new solution is better than the one of current solution: 
+#             if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+#                 # if new solution is feasible:
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.copy(new_solution)  # udate current solution
+#                     print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                     print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                     print("time", (time.process_time() - start_time))
+#                     # current_solution.print()
+#                     # iteration +=1
+#                     iteration = 0
+#                     # start_time = time.process_time()
+#                 iteration +=1
+#             else:
+#                 iteration += 1
+#                 continue
 
-        if neighbour == 1:
-            if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
-                iteration = 0
-                # value_SEED = 0
-                neighbour += 1
-                start_time = time.process_time()
-                continue
+#         if neighbour == 1:
+#             if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
+#                 iteration = 0
+#                 # value_SEED = 0
+#                 neighbour += 1
+#                 start_time = time.process_time()
+#                 continue
 
-            # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution, error_index) = \
-                k_swap_t(
-                    n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
-            # initial_comb.print()
-            # final_comb.print()
-            # new_solution.print()
+#             # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution, error_index) = \
+#                 k_swap_t(
+#                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+#             # initial_comb.print()
+#             # final_comb.print()
+#             # new_solution.print()
 
-            # if the OBJ of new solution is better than the one of current solution: 
-            if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
-                # verify is new solution is feasible
-                V_distances_matrix, V_loads_matrix, new_solution = \
-                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
-                # if new solution is feasible:
-                if new_solution.feasibility_vector.verify() == True:
-                    current_solution = copy.copy(new_solution)  # udate current solution
-                    print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                    print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                    # print("new solution found!! ************************************************************")
-                    # current_solution.print()
-                    iteration = 0
-                    neighbour = 0
-                    start_time = time.process_time()
-                iteration +=1
-            else:
-                iteration += 1
-                continue
+#             # if the OBJ of new solution is better than the one of current solution: 
+#             if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+#                 # if new solution is feasible:
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.copy(new_solution)  # udate current solution
+#                     print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                     print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                     # print("new solution found!! ************************************************************")
+#                     # current_solution.print()
+#                     iteration = 0
+#                     neighbour = 0
+#                     start_time = time.process_time()
+#                 iteration +=1
+#             else:
+#                 iteration += 1
+#                 continue
             
-        if neighbour == 2:
-            if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
-                iteration = 0
-                neighbour += 1
-                start_time = time.process_time()
-                continue
+#         if neighbour == 2:
+#             if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
+#                 iteration = 0
+#                 neighbour += 1
+#                 start_time = time.process_time()
+#                 continue
 
-            # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution, error_index) = \
-                move_kt(
-                    n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
-            # initial_comb.print()
-            # final_comb.print()
-            # new_solution.print()
+#             # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution, error_index) = \
+#                 move_kt(
+#                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+#             # initial_comb.print()
+#             # final_comb.print()
+#             # new_solution.print()
 
-            # if the OBJ of new solution is better than the one of current solution: 
-            if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
-                # verify is new solution is feasible
-                V_distances_matrix, V_loads_matrix, new_solution = \
-                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
-                # if new solution is feasible:
-                if new_solution.feasibility_vector.verify() == True:
-                    current_solution = copy.copy(new_solution)  # udate current solution
-                    print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                    print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                    # print("new solution found!! ************************************************************")
-                    # current_solution.print()
-                    iteration = 0
-                    neighbour = 0
-                    start_time = time.process_time()
-                iteration +=1
-            else:
-                iteration += 1
-                continue
+#             # if the OBJ of new solution is better than the one of current solution: 
+#             if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+#                 # if new solution is feasible:
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.copy(new_solution)  # udate current solution
+#                     print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                     print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                     # print("new solution found!! ************************************************************")
+#                     # current_solution.print()
+#                     iteration = 0
+#                     neighbour = 0
+#                     start_time = time.process_time()
+#                 iteration +=1
+#             else:
+#                 iteration += 1
+#                 continue
             
-        if neighbour == 3:
-            if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
-                iteration = 0
-                neighbour += 1
-                start_time = time.process_time()
-                continue
+#         if neighbour == 3:
+#             if iteration >= max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
+#                 iteration = 0
+#                 neighbour += 1
+#                 start_time = time.process_time()
+#                 continue
 
-            # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution, error_index) = \
-                f_swap_kt(
-                    n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
-            if error_index == False:
-                continue
+#             # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution, error_index) = \
+#                 f_swap_kt(
+#                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+#             if error_index == False:
+#                 continue
             
-            # initial_comb.print()
-            # final_comb.print()
-            # new_solution.print()
+#             # initial_comb.print()
+#             # final_comb.print()
+#             # new_solution.print()
 
-            # if the OBJ of new solution is better than the one of current solution: 
-            if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
-                # verify is new solution is feasible
-                V_distances_matrix, V_loads_matrix, new_solution = \
-                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
-                # if new solution is feasible:
-                if new_solution.feasibility_vector.verify() == True:
-                    current_solution = copy.copy(new_solution)  # udate current solution
-                    print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                    print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                    # print("new solution found!! ************************************************************")
-                    # current_solution.print()
-                    iteration = 0
-                    neighbour = 0
-                    start_time = time.process_time()
-                iteration +=1
-            else:
-                iteration += 1
-                continue
+#             # if the OBJ of new solution is better than the one of current solution: 
+#             if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+#                 # if new solution is feasible:
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.copy(new_solution)  # udate current solution
+#                     print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                     print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                     # print("new solution found!! ************************************************************")
+#                     # current_solution.print()
+#                     iteration = 0
+#                     neighbour = 0
+#                     start_time = time.process_time()
+#                 iteration +=1
+#             else:
+#                 iteration += 1
+#                 continue
 
-        if neighbour == 4:
-            if iteration > max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
-                iteration = 0
-                neighbour += 1
-                continue
+#         if neighbour == 4:
+#             if iteration > max_iteration_neigh[neighbour] or (time.process_time() - start_time) > time_limit_neigh:
+#                 iteration = 0
+#                 neighbour += 1
+#                 continue
 
-            # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution, error_index) = \
-                swap_kt(
-                    n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+#             # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution, error_index) = \
+#                 swap_kt(
+#                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
             
-            V_distances_matrix, V_loads_matrix, new_solution = algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)    
-            # new_solution.feasibility_vector.print()
-            # if error_index == False:
-            #     continue
+#             V_distances_matrix, V_loads_matrix, new_solution = algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                 n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)    
+#             # new_solution.feasibility_vector.print()
+#             # if error_index == False:
+#             #     continue
             
-            # initial_comb.print()
-            # final_comb.print()
-            # new_solution.print()
+#             # initial_comb.print()
+#             # final_comb.print()
+#             # new_solution.print()
 
-            # if the OBJ of new solution is better than the one of current solution: 
-            if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
-                # verify is new solution is feasible
-                V_distances_matrix, V_loads_matrix, new_solution = \
-                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
-                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
-                # if new solution is feasible:
-                if new_solution.feasibility_vector.verify() == True:
-                    current_solution = copy.copy(new_solution)  # udate current solution
-                    print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                    print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                    # print("new solution found!! ************************************************************")
-                    # current_solution.print()
-                    iteration = 0
-                    neighbour = 0
-                    start_time = time.process_time()
-                iteration +=1
-            else:
-                iteration += 1
-                continue
+#             # if the OBJ of new solution is better than the one of current solution: 
+#             if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+#                 # if new solution is feasible:
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.copy(new_solution)  # udate current solution
+#                     print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                     print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                     # print("new solution found!! ************************************************************")
+#                     # current_solution.print()
+#                     iteration = 0
+#                     neighbour = 0
+#                     start_time = time.process_time()
+#                 iteration +=1
+#             else:
+#                 iteration += 1
+#                 continue
         
 
-    return current_solution
+#     return current_solution
 
 
 
-def VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
-                            current_solution, max_neighbour, max_iteration_vector, time_limit_VND, time_limit_neigh, two_opt_iteration):
+# def VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+#                             current_solution, max_neighbour, max_iteration_vector, time_limit_VND, time_limit_neigh, two_opt_iteration, worse_sol_acceptance):
     
-    # clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+#     clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
 
-    neighbour = 0
+#     neighbour = 0
+#     iteration = 0
+#     value_SEED = 0
+#     random.seed(value_SEED)
+#     new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
+#     start_time_neigh = time.process_time()
+#     start_time_VND = time.process_time()
+
+#     max_iteration_value = np.max(max_iteration_vector)
+#     # print("\max_iteration\n", max_iteration_value)
+#     two_opt_vector = np.zeros(int(max_iteration_value/two_opt_iteration-1), dtype=int)
+#     multiplier = 1
+#     for i in range(len(two_opt_vector)):
+#         two_opt_vector[i] = two_opt_iteration*multiplier
+#         multiplier += 1
+#     print("\ntwo_opt_vector\n", two_opt_vector)
+
+#     number_iterations_vector = np.zeros(max_neighbour+1, dtype=int)
+#     time_vector = np.zeros(max_neighbour+1, dtype=float)
+    
+#     while neighbour <= max_neighbour:
+
+#         # print(f"n: {neighbour}, i: {iteration}")
+#         # set time limit for the VND algorithm: if it has been exceeded, break
+#         if (time.process_time() - start_time_VND) > time_limit_VND:
+#             neighbour = 5
+#             break
+
+#         # set time limit and iteration limit for neighbour: if one of them has been exceeded, go to next neighbour (reset)
+#         if iteration >= max_iteration_vector[neighbour] or (time.process_time() - start_time_neigh) > time_limit_neigh:
+#             # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+            
+#             number_iterations_vector[neighbour] += iteration
+#             time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+#             iteration = 0
+#             neighbour += 1
+#             start_time = time.process_time()
+#             continue
+
+#         # if np.any(two_opt_vector == iteration):
+#             # print(f"hej! n: {neighbour}, i: {iteration}")
+#             # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+
+#         # define new solution
+#         (initial_comb, final_comb, new_solution, error_index) = \
+#             define_neighboring_solution(
+#                 n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
+#                 copy.deepcopy(current_solution), value_SEED, neighbour, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
+#         if error_index == False:    # solution has not been defined
+#                 continue
+
+#         # if a worse solution can be accepted:
+#         if worse_sol_acceptance == True and neighbour == 3:
+#             OBJ_limit_value = (current_solution.OBJ_tot_dist + 0.15 * current_solution.OBJ_tot_dist)
+#             print("\n\n")
+#             print("current_solution.OBJ_tot_dist", current_solution.OBJ_tot_dist)
+#             print("OBJ_limit_value", OBJ_limit_value)
+
+#             if new_solution.OBJ_tot_dist < OBJ_limit_value:
+#                 # verify is new solution is feasible
+#                 V_distances_matrix, V_loads_matrix, new_solution = \
+#                     algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+                
+#                 if new_solution.feasibility_vector.verify() == True:
+#                     current_solution = copy.deepcopy(new_solution)
+#                     new_sol_per_neigh[neighbour] += 1
+
+#                     # save data in counter
+#                     number_iterations_vector[neighbour] += iteration
+#                     time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+#                     # return to the neighbour 0 (reset)
+#                     iteration = 0
+#                     neighbour = 0
+#                     start_time_neigh = time.process_time()
+#                     worse_sol_acceptance = False
+#                     print("worse solution found", worse_sol_acceptance)
+            
+
+#         # if the OBJ of new solution is better than the one of current solution and feasible, update current solution: 
+#         if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+
+#             # verify is new solution is feasible
+#             V_distances_matrix, V_loads_matrix, new_solution = \
+#                 algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+#                     n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+            
+#             # if new solution is feasible:
+#             if new_solution.feasibility_vector.verify() == True:
+#                 current_solution = copy.deepcopy(new_solution)  # udate current solution
+#                 # print(f"\n\nneighbour {neighbour} iteration {iteration}")
+#                 # print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
+#                 new_sol_per_neigh[neighbour] += 1
+                
+#                 # save data in counter
+#                 number_iterations_vector[neighbour] += iteration
+#                 time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+#                 # return to the neighbour 0 (reset)
+#                 iteration = 0
+#                 neighbour = 0
+#                 start_time_neigh = time.process_time()
+            
+#             iteration += 1
+            
+#         else:
+#             iteration += 1
+#             continue
+        
+
+#     return (current_solution, new_sol_per_neigh, number_iterations_vector, time_vector)
+
+
+
+def VND_algorithm_condensed2(
+        n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+        current_solution, 
+        time_limit_VND, time_limit_neigh,
+        neigh_order, initial_neighbour, max_neighbour, max_iteration_neigh, 
+        two_opt_iteration, 
+        worse_sol_acceptance):
+    '''  '''
+
+    ''' STEP 0: prepare parameters -------------------------------------------------------------------------------------------------------------------------------'''
+    
+    # filter clients with non-maximum frequency
+    clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+
+    # initialise parameters
+    neighbour = initial_neighbour
     iteration = 0
-    value_SEED = 0
-    random.seed(value_SEED)
-    new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
+    # value_SEED = 0
+    # random.seed(value_SEED)
     start_time_neigh = time.process_time()
     start_time_VND = time.process_time()
 
-    max_iteration_value = np.max(max_iteration_vector)
-    # print("\max_iteration\n", max_iteration_value)
-    two_opt_vector = np.zeros(int(max_iteration_value/two_opt_iteration-1), dtype=int)
+    # 2-opt vector: defines in which iterations the 2-opt has to be performed
+    two_opt_vector = np.zeros(int(max_iteration_neigh/two_opt_iteration-1), dtype=int)
     multiplier = 1
     for i in range(len(two_opt_vector)):
         two_opt_vector[i] = two_opt_iteration*multiplier
         multiplier += 1
-    print("\ntwo_opt_vector\n", two_opt_vector)
 
+    # store data
+    new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
     number_iterations_vector = np.zeros(max_neighbour+1, dtype=int)
     time_vector = np.zeros(max_neighbour+1, dtype=float)
+
+
     
+    ''' VND ALGORITHM: -------------------------------------------------------------------------------------------------------------------------------------------'''
     while neighbour <= max_neighbour:
 
-        # print(f"n: {neighbour}, i: {iteration}")
-        # set time limit for the VND algorithm: if it has been exceeded, break
+        ''' time exceeds time_limit_VND: break VND'''
         if (time.process_time() - start_time_VND) > time_limit_VND:
-            neighbour = 5
+            neighbour = max_neighbour + 1
             break
 
-        # set time limit and iteration limit for neighbour: if one of them has been exceeded, go to next neighbour (reset)
-        if iteration >= max_iteration_vector[neighbour] or (time.process_time() - start_time_neigh) > time_limit_neigh:
-            (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+        ''' iteration exceeds iteration_limit_neigh: go to next neighbourhood '''
+        if iteration >= max_iteration_neigh or (time.process_time() - start_time_neigh) > time_limit_neigh:
+
+            ''' 2-opt between neighbourhoods '''
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
             
+            # save data in counter
             number_iterations_vector[neighbour] += iteration
             time_vector[neighbour] += (time.process_time()- start_time_neigh)
 
+            # go to the next neighbour (reset)
             iteration = 0
             neighbour += 1
             start_time = time.process_time()
             continue
 
-        if np.any(two_opt_vector == iteration):
-            # print(f"hej! n: {neighbour}, i: {iteration}")
-            (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+        ''' 2-opt every X iterations'''
+        # if np.any(two_opt_vector == iteration):
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
 
-        # define new solution
+        ''' new solution ''' 
         (initial_comb, final_comb, new_solution, error_index) = \
             define_neighboring_solution(
                 n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
-                copy.deepcopy(current_solution), value_SEED, neighbour, 0) # ho rimosso clients_NO_max_frequ
+                copy.deepcopy(current_solution), neigh_order, neighbour, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
         if error_index == False:    # solution has not been defined
                 continue
 
+        ''' worse solution acceptance criteria '''
+        # if a worse solution can be accepted:
+        if worse_sol_acceptance == True and neighbour == 3:
+            OBJ_limit_value = (current_solution.OBJ_tot_dist + 0.15 * current_solution.OBJ_tot_dist)
+
+            if new_solution.OBJ_tot_dist < OBJ_limit_value:
+                # verify is new solution is feasible
+                V_distances_matrix, V_loads_matrix, new_solution = \
+                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+                
+                if new_solution.feasibility_vector.verify() == True:
+
+                    # udate current solution
+                    current_solution = copy.deepcopy(new_solution)
+
+                    # save data in counter
+                    new_sol_per_neigh[neighbour] += 1
+                    number_iterations_vector[neighbour] += iteration
+                    time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+                    # return to the neighbour 0 (reset)
+                    iteration = 0
+                    neighbour = 0
+                    start_time_neigh = time.process_time()
+                    worse_sol_acceptance = False
+                    # print("worse solution found", worse_sol_acceptance)
+                # else:
+                iteration += 1
+
+            else:
+                iteration += 1
+                continue
+
+            
+        ''' better solution acceptance criteria '''
         # if the OBJ of new solution is better than the one of current solution and feasible, update current solution: 
         if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
 
@@ -316,12 +492,12 @@ def VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehic
             
             # if new solution is feasible:
             if new_solution.feasibility_vector.verify() == True:
-                current_solution = copy.deepcopy(new_solution)  # udate current solution
-                # print(f"\n\nneighbour {neighbour} iteration {iteration}")
-                # print(f"OBJ: {current_solution.OBJ_tot_dist} ************************************************************")
-                new_sol_per_neigh[neighbour] += 1
+
+                # udate current solution
+                current_solution = copy.deepcopy(new_solution)
                 
                 # save data in counter
+                new_sol_per_neigh[neighbour] += 1
                 number_iterations_vector[neighbour] += iteration
                 time_vector[neighbour] += (time.process_time()- start_time_neigh)
 
@@ -330,124 +506,441 @@ def VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehic
                 neighbour = 0
                 start_time_neigh = time.process_time()
             
+            # else:
             iteration += 1
             
         else:
             iteration += 1
             continue
+    
+    return (current_solution, new_sol_per_neigh, number_iterations_vector, time_vector)
         
 
+
+def VND_algorithm_condensed2_pvrp(
+        n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+        current_solution, 
+        time_limit_VND, time_limit_neigh,
+        neigh_order, initial_neighbour, max_neighbour, max_iteration_neigh, 
+        two_opt_iteration, 
+        worse_sol_acceptance):
+    '''  '''
+
+    ''' STEP 0: prepare parameters -------------------------------------------------------------------------------------------------------------------------------'''
+    
+    # filter clients with non-maximum frequency
+    clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+
+    # initialise parameters
+    neighbour = initial_neighbour
+    iteration = 0
+    # value_SEED = 0
+    # random.seed(value_SEED)
+    start_time_neigh = time.process_time()
+    start_time_VND = time.process_time()
+
+    # 2-opt vector: defines in which iterations the 2-opt has to be performed
+    two_opt_vector = np.zeros(int(max_iteration_neigh/two_opt_iteration-1), dtype=int)
+    multiplier = 1
+    for i in range(len(two_opt_vector)):
+        two_opt_vector[i] = two_opt_iteration*multiplier
+        multiplier += 1
+
+    # store data
+    new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
+    number_iterations_vector = np.zeros(max_neighbour+1, dtype=int)
+    time_vector = np.zeros(max_neighbour+1, dtype=float)
+
+
+    
+    ''' VND ALGORITHM: -------------------------------------------------------------------------------------------------------------------------------------------'''
+    while neighbour <= max_neighbour:
+
+        ''' time exceeds time_limit_VND: break VND'''
+        if (time.process_time() - start_time_VND) > time_limit_VND:
+            neighbour = max_neighbour + 1
+            break
+
+        ''' iteration exceeds iteration_limit_neigh: go to next neighbourhood '''
+        if iteration >= max_iteration_neigh or (time.process_time() - start_time_neigh) > time_limit_neigh:
+
+            ''' 2-opt between neighbourhoods '''
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+            
+            # save data in counter
+            number_iterations_vector[neighbour] += iteration
+            time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+            # go to the next neighbour (reset)
+            iteration = 0
+            neighbour += 1
+            start_time = time.process_time()
+            continue
+
+        ''' 2-opt every X iterations'''
+        # if np.any(two_opt_vector == iteration):
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+
+        ''' new solution ''' 
+        (initial_comb, final_comb, new_solution, error_index) = \
+            define_neighboring_solution(
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
+                copy.deepcopy(current_solution), neigh_order, neighbour, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
+        if error_index == False:    # solution has not been defined
+                continue
+
+        ''' worse solution acceptance criteria '''
+        # if a worse solution can be accepted:
+        if worse_sol_acceptance == True and neighbour == 3:
+            OBJ_limit_value = (current_solution.OBJ_tot_dist + 0.15 * current_solution.OBJ_tot_dist)
+
+            if new_solution.OBJ_tot_dist < OBJ_limit_value:
+                # verify is new solution is feasible
+                V_distances_matrix, V_loads_matrix, new_solution = \
+                    algorithms.feasibility_function_POOP.check_feasibility_pvrp(
+                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+                
+                if new_solution.feasibility_vector.verify() == True:
+
+                    # udate current solution
+                    current_solution = copy.deepcopy(new_solution)
+
+                    # save data in counter
+                    new_sol_per_neigh[neighbour] += 1
+                    number_iterations_vector[neighbour] += iteration
+                    time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+                    # return to the neighbour 0 (reset)
+                    iteration = 0
+                    neighbour = 0
+                    start_time_neigh = time.process_time()
+                    worse_sol_acceptance = False
+                    # print("worse solution found", worse_sol_acceptance)
+                # else:
+                iteration += 1
+
+            else:
+                iteration += 1
+                continue
+
+            
+        ''' better solution acceptance criteria '''
+        # if the OBJ of new solution is better than the one of current solution and feasible, update current solution: 
+        if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+
+            # verify is new solution is feasible
+            V_distances_matrix, V_loads_matrix, new_solution = \
+                algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+                    n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+            
+            # if new solution is feasible:
+            if new_solution.feasibility_vector.verify() == True:
+
+                # udate current solution
+                current_solution = copy.deepcopy(new_solution)
+                
+                # save data in counter
+                new_sol_per_neigh[neighbour] += 1
+                number_iterations_vector[neighbour] += iteration
+                time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+                # return to the neighbour 0 (reset)
+                iteration = 0
+                neighbour = 0
+                start_time_neigh = time.process_time()
+            
+            # else:
+            iteration += 1
+            
+        else:
+            iteration += 1
+            continue
+    
     return (current_solution, new_sol_per_neigh, number_iterations_vector, time_vector)
 
 
 
-def VND_algorithm_PROVA(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution):
+def VND_algorithm_condensed2_vrp(
+        n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+        current_solution, repetition,
+        time_limit_VND, time_limit_neigh,
+        neigh_order, initial_neighbour, max_neighbour, max_iteration_neigh, 
+        two_opt_iteration, 
+        worse_sol_acceptance, worse_sol_percentage):
+    '''  '''
 
-    neighbour = 0
-    n_neighbour = 1
-    iteration_n0 = 20
-    iteration_n1 = 20
+    # neigh_order = ["move_kt", "f_swap_kt", "swap_kt"]
+    # neigh_order = ["move_kt", "f_swap_kt", "t_swap_k"]
+    # max_neighbour = 2
+
+    ''' STEP 0: prepare parameters -------------------------------------------------------------------------------------------------------------------------------'''
     
+    # filter clients with non-maximum frequency
+    clients_NO_max_frequ = 0
+
+    # initialise parameters
+    neighbour = initial_neighbour
     iteration = 0
-    value_SEED = 0
-    random.seed(value_SEED)
+    # value_SEED = 0
+    # random.seed(value_SEED)
+    start_time_neigh = time.process_time()
+    start_time_VND = time.process_time()
 
-    clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+    # 2-opt vector: defines in which iterations the 2-opt has to be performed
+    two_opt_vector = np.zeros(int(max_iteration_neigh/two_opt_iteration-1), dtype=int)
+    multiplier = 1
+    for i in range(len(two_opt_vector)):
+        two_opt_vector[i] = two_opt_iteration*multiplier
+        multiplier += 1
+
+    # store data
+    new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
+    number_iterations_vector = np.zeros(max_neighbour+1, dtype=int)
+    time_vector = np.zeros(max_neighbour+1, dtype=float)
+    all_solutions = []
+    # all_solutions.append(float(current_solution.OBJ_tot_dist))
 
 
+    
+    ''' VND ALGORITHM: -------------------------------------------------------------------------------------------------------------------------------------------'''
+    while neighbour <= max_neighbour:
 
-    while neighbour <= n_neighbour:
-        if neighbour == 0:
-            if iteration > iteration_n0:
-                iteration = 0
-                # value_SEED = 0
-                neighbour += 1
+        ''' time exceeds time_limit_VND: break VND'''
+        if (time.process_time() - start_time_VND) > time_limit_VND:
+            neighbour = max_neighbour + 1
+            break
+
+        ''' iteration exceeds iteration_limit_neigh: go to next neighbourhood '''
+        if iteration >= max_iteration_neigh or (time.process_time() - start_time_neigh) > time_limit_neigh:
+
+            ''' 2-opt between neighbourhoods '''
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+            
+            # save data in counter
+            number_iterations_vector[neighbour] += iteration
+            time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+            # go to the next neighbour (reset)
+            iteration = 0
+            neighbour += 1
+            start_time = time.process_time()
+            continue
+
+        ''' 2-opt every X iterations'''
+        # if np.any(two_opt_vector == iteration):
+            # (current_solution.assigned_ordered_matrix, current_solution.route_dist_matrix) = \
+            #     algorithms.assign_route.two_opt_route(
+            #         n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, current_solution.route_dist_matrix, current_solution.assigned_ordered_matrix)
+
+        ''' new solution ''' 
+        (initial_comb, final_comb, new_solution, error_index) = \
+            define_neighboring_solution(
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
+                copy.deepcopy(current_solution), neigh_order, neighbour, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
+        if error_index == False:    # solution has not been defined
                 continue
 
-            # print("iteration", iteration)
-            value_SEED += 5
-            # define new solution
-            (initial_comb, final_comb, new_solution) = \
-                k_move_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+        ''' worse solution acceptance criteria '''
+        # if a worse solution can be accepted:
+        ws_neigh = random.randrange(0, max_neighbour+1)
+        if worse_sol_acceptance == True and neighbour == ws_neigh:
+            OBJ_limit_value = (current_solution.OBJ_tot_dist + worse_sol_percentage * current_solution.OBJ_tot_dist)
 
-            # update current solution
-            (current_solution, iteration) = \
-                update_current_solution(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, current_solution, new_solution, iteration)
-            
+            if new_solution.OBJ_tot_dist < OBJ_limit_value:
+                # verify is new solution is feasible
+                V_distances_matrix, V_loads_matrix, new_solution = \
+                    algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+                        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+                
+                if new_solution.feasibility_vector.verify() == True:
 
-        if neighbour == 1:
-            if iteration > iteration_n1:
-                iteration = 0
-                # value_SEED = 0
-                neighbour += 1
+                    # udate current solution
+                    current_solution = copy.deepcopy(new_solution)
+
+                    # save data in counter
+                    new_sol_per_neigh[neighbour] += 1
+                    number_iterations_vector[neighbour] += iteration
+                    time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+                    number_iteration = 0
+                    for neigh in range(len(number_iterations_vector)):
+                        number_iteration += number_iterations_vector[neigh]
+                    all_solutions.append((int(repetition),  int(number_iteration), float(new_solution.OBJ_tot_dist)))
+
+                    # return to the neighbour 0 (reset)
+                    iteration = 0
+                    neighbour = 0
+                    start_time_neigh = time.process_time()
+                    worse_sol_acceptance = False
+                    # print("worse solution found", worse_sol_acceptance)
+                # else:
+                iteration += 1
+
+            else:
+                iteration += 1
                 continue
 
-            # for iteration in range(iteration_n1):
-            # print("iteration", iteration)
-            value_SEED += 5
-            # print("value_SEED", value_SEED)
-            # define new solution
-            (initial_comb, final_comb, new_solution) = \
-                k_swap_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
             
-            # update current solution
-            (current_solution, iteration) = \
-                update_current_solution(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, current_solution, new_solution, iteration)
+        ''' better solution acceptance criteria '''
+        # if the OBJ of new solution is better than the one of current solution and feasible, update current solution: 
+        if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+
+            # verify is new solution is feasible
+            V_distances_matrix, V_loads_matrix, new_solution = \
+                algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
+                    n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+            
+            # if new solution is feasible:
+            if new_solution.feasibility_vector.verify() == True:
+
+                # udate current solution
+                current_solution = copy.deepcopy(new_solution)
+                
+                # save data in counter
+                new_sol_per_neigh[neighbour] += 1
+                number_iterations_vector[neighbour] += iteration
+                time_vector[neighbour] += (time.process_time()- start_time_neigh)
+
+                number_iteration = 0
+                for neigh in range(len(number_iterations_vector)):
+                    number_iteration += number_iterations_vector[neigh]
+                all_solutions.append((int(repetition),  int(number_iteration), float(new_solution.OBJ_tot_dist)))
+
+                # return to the neighbour 0 (reset)
+                iteration = 0
+                neighbour = 0
+                start_time_neigh = time.process_time()
+            
+            # else:
+            iteration += 1
+            
+        else:
+            iteration += 1
+            continue
+    
+    return (current_solution, new_sol_per_neigh, number_iterations_vector, time_vector, all_solutions)
+
+
+
+# def VND_algorithm_PROVA(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution):
+
+#     neighbour = 0
+#     n_neighbour = 1
+#     iteration_n0 = 20
+#     iteration_n1 = 20
+    
+#     iteration = 0
+#     value_SEED = 0
+#     random.seed(value_SEED)
+
+#     clients_NO_max_frequ = filter_clients_NO_max_frequ(sorted_data, n_days, n_clients)
+
+
+
+#     while neighbour <= n_neighbour:
+#         if neighbour == 0:
+#             if iteration > iteration_n0:
+#                 iteration = 0
+#                 # value_SEED = 0
+#                 neighbour += 1
+#                 continue
+
+#             # print("iteration", iteration)
+#             value_SEED += 5
+#             # define new solution
+#             (initial_comb, final_comb, new_solution) = \
+#                 k_move_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+
+#             # update current solution
+#             (current_solution, iteration) = \
+#                 update_current_solution(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, current_solution, new_solution, iteration)
+            
+
+#         if neighbour == 1:
+#             if iteration > iteration_n1:
+#                 iteration = 0
+#                 # value_SEED = 0
+#                 neighbour += 1
+#                 continue
+
+#             # for iteration in range(iteration_n1):
+#             # print("iteration", iteration)
+#             value_SEED += 5
+#             # print("value_SEED", value_SEED)
+#             # define new solution
+#             (initial_comb, final_comb, new_solution) = \
+#                 k_swap_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+            
+#             # update current solution
+#             (current_solution, iteration) = \
+#                 update_current_solution(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, current_solution, new_solution, iteration)
             
 
 
 
-    return current_solution
+#     return current_solution
 
 
 
 
 ''' NEIGHBORHOODS '''
 
-def define_neighboring_solution(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
+def define_neighboring_solution(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
-    if neighbour == 0:
+    if neigh_order[neighbour] == "k_move_t":
         (initial_comb, final_comb, new_solution, error_index) = \
             k_move_t(
-                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
     
-    if neighbour == 1:
+    if neigh_order[neighbour] == "k_swap_t":
         (initial_comb, final_comb, new_solution, error_index) = \
             k_swap_t(
-                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
             
-    if neighbour == 2:
+    if neigh_order[neighbour] == "move_kt":
         (initial_comb, final_comb, new_solution, error_index) = \
             move_kt(
-                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
             
-    if neighbour == 3:
+    if neigh_order[neighbour] == "f_swap_kt":
         (initial_comb, final_comb, new_solution, error_index) = \
             f_swap_kt(
-                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
         
-    if neighbour == 4:
+    if neigh_order[neighbour] == "swap_kt":
         (initial_comb, final_comb, new_solution, error_index) = \
             swap_kt(
-                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ)
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
+        
+    if neigh_order[neighbour] == "t_swap_k":
+        (initial_comb, final_comb, new_solution, error_index) = \
+            t_swap_k(
+                n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ)
+        
 
     return (initial_comb, final_comb, new_solution, error_index)
 
 
 
-def k_move_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
+def k_move_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
     # neighbour = 0
 
     # Inintial combination:
-    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, clients_NO_max_frequ)
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ)
     if error_index == False:
         final_comb = 0
         new_solution = 0
         return (initial_comb, final_comb, new_solution, False)
     
     # Final combination: select new day excluding day_t1
-    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED)
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
     
     # New solution:
     new_solution = move_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)
@@ -465,17 +958,17 @@ def k_move_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_m
 
 
 
-def k_swap_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
+def k_swap_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
     # Combination 1 and 2 at the inital state:
-    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, clients_NO_max_frequ)
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ)
     if error_index == False:
         final_comb = 0
         new_solution = 0
         return (initial_comb, final_comb, new_solution, False)
         
     # Combination 1 and 2 at the final state:
-    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED)
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
 
     # New solution:
     new_solution = swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)
@@ -484,17 +977,17 @@ def k_swap_t(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_m
 
 
 
-def move_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
+def move_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
     # Inintial combination:
-    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, 0)    # ho rimosso clients_NO_max_frequ
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, 0)    # ho rimosso clients_NO_max_frequ
     if error_index == False:
         final_comb = 0
         new_solution = 0
         return (initial_comb, final_comb, new_solution, False)
     
     # Final combination: select new day excluding day_t1
-    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED)
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
 
     # New solution:
     new_solution = move_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)
@@ -503,17 +996,17 @@ def move_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_ma
 
 
 
-def f_swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
+def f_swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
     # Combination 1 and 2 at the inital state:
-    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, 0)    # ho rimosso clients_NO_max_frequ
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, 0)    # ho rimosso clients_NO_max_frequ
     if error_index == False:
         final_comb = 0
         new_solution = 0
         return (initial_comb, final_comb, new_solution, False)
     
     # Combination 1 and 2 at the final state:
-    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED)
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
 
     # initial_comb.print()
     # final_comb.print()
@@ -525,18 +1018,17 @@ def f_swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_
 
 
 
-def swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, value_SEED, neighbour, clients_NO_max_frequ):
-
+def swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
 
     # Combination 1 and 2 at the inital state:
-    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, clients_NO_max_frequ)
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ)
     if error_index == False:
         final_comb = 0
         new_solution = 0
         return (initial_comb, final_comb, new_solution, False)
     
     # Combination 1 and 2 at the final state:
-    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED)
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
 
     # New solution:
     new_solution = swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)    
@@ -550,9 +1042,36 @@ def swap_kt(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_ma
     return (initial_comb, final_comb, new_solution, True)
 
 
+
+def t_swap_k(n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, neighbour, clients_NO_max_frequ):
+
+    # Combination 1 and 2 at the inital state:
+    # Combination 1 and 2 at the inital state:
+    (initial_comb, error_index) = def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ)
+    if error_index == False:
+        final_comb = 0
+        new_solution = 0
+        return (initial_comb, final_comb, new_solution, False)
+    
+    # initial_comb.print()
+    
+    # Combination 1 and 2 at the final state:
+    final_comb = def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb)
+
+    # final_comb.print()
+
+    # New solution:
+    new_solution = swap_multi_cl_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)
+
+    # new_solution.print()
+
+    return (initial_comb, final_comb, new_solution, True)
+
+
+
 ''' FUNCTIONS '''
 
-def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, value_SEED, clients_NO_max_frequ):
+def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ):
 
     # pick random vehicle, day, client and define its current schedule
     vehicle_i = random.randint(0, n_vehicles-1)
@@ -572,7 +1091,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
     # NEIGHBOUR: 
     #
     # k_move_t 
-    if neighbour == 0:
+    if neigh_order[neighbour] == "k_move_t":
         (real_client_index, error_index) = pick_client(n_days, data, current_solution, vehicle_i, day_i, clients_NO_max_frequ, 0)
         schedule_i = define_initial_schedule(n_days, current_solution, vehicle_i, real_client_index)
 
@@ -580,7 +1099,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         # return initial_comb
     #
     # k_swap_t
-    if neighbour == 1:
+    if neigh_order[neighbour] == "k_swap_t":
         # Initial combination 1:
         (real_client_index, error_index) = pick_client(n_days, data, current_solution, vehicle_i, day_i, clients_NO_max_frequ, 0)
         schedule_i = define_initial_schedule(n_days, current_solution, vehicle_i, real_client_index)
@@ -620,7 +1139,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         # return initial_comb
     #
     # move_kt
-    if neighbour == 2:
+    if neigh_order[neighbour] == "move_kt":
         (real_client_index, error_index) = pick_client(n_days, data, current_solution, vehicle_i, day_i, 0, 0)
         schedule_i = define_initial_schedule(n_days, current_solution, vehicle_i, real_client_index)
 
@@ -628,7 +1147,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         # return initial_comb
     #
     # f_swap_kt
-    if neighbour == 3:
+    if neigh_order[neighbour] == "f_swap_kt":
         # Initial combination 1:
         (real_client_index, error_index) = pick_client(n_days, data, current_solution, vehicle_i, day_i, 0, 0) # we are allowed to pick clients with freq = n_days
         schedule_i = define_initial_schedule(n_days, current_solution, vehicle_i, real_client_index)
@@ -664,7 +1183,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         # return initial_comb
     #
     # swap_kt
-    if neighbour == 4:
+    if neigh_order[neighbour] == "swap_kt":
         # Initial combination 1:
         (real_client_index, error_index) = pick_client(n_days, data, current_solution, vehicle_i, day_i, 0, 0) # we are allowed to pick clients with freq = n_days
         schedule_i = define_initial_schedule(n_days, current_solution, vehicle_i, real_client_index)
@@ -685,17 +1204,43 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         # Initial combination (comb. 1 and comb.2):
         initial_comb = classes.SwapCombination('initial', initial_comb_1, initial_comb_2)
         # return initial_comb
+    #
+    #t_swap_k
+    if neigh_order[neighbour] == "t_swap_k":
+        # print("\n\nciao")
+
+        # Initial combination 1:
+        (real_client_index_1, number_clients_1, error_index) = pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, 0, 0)
+        if error_index == False:
+            initial_comb = 0
+            return (initial_comb, False)
+        schedule_i = np.zeros(n_days)
+        schedule_i[day_i] = 1
+
+        initial_comb_1 = classes.Move_combination('initial', vehicle_i, day_i, schedule_i, real_client_index_1)
+        
+        # Initial combination 2:
+        vehicle_i2 = random.choice([i for i in range(n_vehicles) if i != initial_comb_1.vehicle])
+        (real_client_index_2, number_clients_2, error_index) = pick_set_clients(n_days, data, current_solution, vehicle_i2, day_i, 0, number_clients_1)
+        if error_index == False:
+            initial_comb = 0
+            return (initial_comb, False)
+
+        initial_comb_2 = classes.Move_combination('initial_2', vehicle_i2, day_i, schedule_i, real_client_index_2)
+
+        # Initial combination (comb. 1 and comb.2):
+        initial_comb = classes.SwapCombination('initial', initial_comb_1, initial_comb_2)
 
     return (initial_comb, True)
 
 
 
-def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, initial_comb, value_SEED):
+def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, current_solution, neigh_order, initial_comb):
 
     # NEIGHBOUR: 
     # 
     # k_move_t 
-    if neighbour == 0:
+    if neigh_order[neighbour] == "k_move_t":
         # pick new random day and define client's new schedule
         day_f = random.choice([t for t in range(0, n_days) if t != initial_comb.day])
         schedule_f = define_new_schedule_day(n_days, data, day_f, initial_comb.client, initial_comb.schedule)
@@ -704,7 +1249,7 @@ def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, curren
         # return final_comb
     #
     # k_swap_t
-    if neighbour == 1:
+    if neigh_order[neighbour] == "k_swap_t":
         # pick a random schedule for comb_1 and comb_2, based on the day of the other client
         schedule_f1 = define_new_schedule_day(n_days, data, initial_comb.comb_2.day, initial_comb.comb_1.client, initial_comb.comb_1.schedule)
         schedule_f2 = define_new_schedule_day(n_days, data, initial_comb.comb_1.day, initial_comb.comb_2.client, initial_comb.comb_2.schedule)
@@ -715,7 +1260,7 @@ def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, curren
         # return final_comb
     #
     # move_kt
-    if neighbour == 2:
+    if neigh_order[neighbour] == "move_kt":
         # pick a random vehicle, define the available days and define client's new schedule
         vehicle_f = random.choice([k for k in range(0, n_vehicles) if k != initial_comb.vehicle])
         available_days = define_available_days(n_days, vehicle_capacity, data, vehicle_f, initial_comb, current_solution.transp_demand_matrix)
@@ -723,7 +1268,7 @@ def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, curren
         final_comb = classes.Move_combination('final', vehicle_f, available_days, schedule_f, initial_comb.client)
     #
     # f_swap_kt
-    if neighbour == 3:
+    if neigh_order[neighbour] == "f_swap_kt":
         # invert vehicle and schedule (and day) of the two clients
         # Final combination:
         final_comb_1 = classes.Move_combination('final_1', initial_comb.comb_2.vehicle, initial_comb.comb_2.day, initial_comb.comb_2.schedule, initial_comb.comb_1.client)
@@ -732,7 +1277,7 @@ def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, curren
         # return final_comb
     #
     # swap_kt
-    if neighbour == 4:
+    if neigh_order[neighbour] == "swap_kt":
         # remove clients:
         (new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, new_OBJ_tot_dist) = crete_new_sol_attributes(current_solution)
         for day in range(n_days):
@@ -754,7 +1299,14 @@ def def_final_comb(neighbour, n_vehicles, n_days, vehicle_capacity, data, curren
         final_comb_2 = classes.Move_combination('final_2', initial_comb.comb_1.vehicle, available_days_2, schedule_f2, initial_comb.comb_2.client)
         final_comb = classes.SwapCombination('final', final_comb_1, final_comb_2)
         # return final_comb
-
+    #
+    #t_swap_k
+    if neigh_order[neighbour] == "t_swap_k":
+        # print("ciao")
+        # Final combination:
+        final_comb_1 = classes.Move_combination('final_1', initial_comb.comb_2.vehicle, initial_comb.comb_1.day, initial_comb.comb_1.schedule, initial_comb.comb_1.client)
+        final_comb_2 = classes.Move_combination('final_2', initial_comb.comb_1.vehicle, initial_comb.comb_2.day, initial_comb.comb_2.schedule, initial_comb.comb_2.client)
+        final_comb = classes.SwapCombination('final', final_comb_1, final_comb_2)
 
     return final_comb
 
@@ -811,6 +1363,34 @@ def swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
     return new_solution
 
 
+def swap_multi_cl_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb):
+
+    # creation of new_Solution class attributes
+    (new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, new_OBJ_tot_dist) = crete_new_sol_attributes(current_solution)
+
+    # Remove and add client to the Assigned customer matrix and the Transported demand matrix
+    # print("\nall_clients", new_assigned_ordered_matrix[initial_comb.comb_1.vehicle, initial_comb.comb_1.day])
+    # print("set clients to move", initial_comb.comb_1.client)
+    (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_add_multi_cl(n_days, data, initial_comb.comb_1, final_comb.comb_1, new_assigned_ordered_matrix, new_transp_demand_matrix)
+    # print("after movement operation", new_assigned_ordered_matrix[initial_comb.comb_1.vehicle, initial_comb.comb_1.day])
+
+    # print("\nall_clients", new_assigned_ordered_matrix[initial_comb.comb_2.vehicle, initial_comb.comb_2.day])
+    # print("set clients to move", initial_comb.comb_2.client)
+    (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_add_multi_cl(n_days, data, initial_comb.comb_2, final_comb.comb_2, new_assigned_ordered_matrix, new_transp_demand_matrix)
+    # print("after movement operation", new_assigned_ordered_matrix[initial_comb.comb_2.vehicle, initial_comb.comb_2.day])
+
+    # Reorganize the clients (best route) and update the Route distances matrix
+    (new_route_dist_matrix, new_assigned_ordered_matrix) = find_best_route(n_vehicles, n_days, distance_matrix, closeness_matrix, initial_comb.comb_1, final_comb.comb_1, new_route_dist_matrix, new_assigned_ordered_matrix)
+    (new_route_dist_matrix, new_assigned_ordered_matrix) = find_best_route(n_vehicles, n_days, distance_matrix, closeness_matrix, initial_comb.comb_2, final_comb.comb_2, new_route_dist_matrix, new_assigned_ordered_matrix)
+
+    # Calculate the OBJECTIVE value
+    new_OBJ_tot_dist = algorithms.assign_route.calculate_tot_dist (n_vehicles, n_days, new_route_dist_matrix, new_OBJ_tot_dist)
+
+    # Save new solution:
+    new_solution = classes.Solution(new_OBJ_tot_dist, new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix)
+
+    return new_solution
+
 
 ''' OTHER FUNCTIONS '''
 
@@ -843,6 +1423,82 @@ def pick_client(n_days, data, current_solution, vehicle_i, day_i, clients_filtre
     real_client_index = random.choice(client_list)
     
     return (real_client_index, True)
+
+
+def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
+
+    client_list = copy.copy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
+    # remove zeros:
+    client_list = client_list[client_list != 0]
+    # if empty list
+    if np.size(client_list) == 0:
+        # print("\n\n____________________________empty__________________________\n\n")
+        real_client_index = 0
+        return (real_client_index, 0, False)
+    
+    # pick random client #1:
+    real_client_index_1 = random.choice(client_list)
+
+    # pick random client #2:
+    if number_clients == 0:
+        mask = client_list != real_client_index_1
+        client_list_no_cl1 = client_list[mask]
+        real_client_index_2 = random.choice(client_list_no_cl1)
+    else:
+        # pick the same number of clients with a variance of [-1, +1]
+        # print("\n\n")
+        # print("client_list", client_list)
+        # print("real_client_index_1", real_client_index_1)
+        # print("number_clients", number_clients)
+
+        where_cl1 = (np.where(client_list == real_client_index_1)[0][0])
+        possible_range = [int(where_cl1-number_clients), int(where_cl1-number_clients+1), int(where_cl1+number_clients-1), int(where_cl1+number_clients+1)]
+        # print("possible_range", possible_range)
+
+        if possible_range[0] < 0:
+            possible_range[0] = 0
+            possible_range[1] = 1
+        if possible_range[3] > len(client_list):
+            possible_range[2] = len(client_list) -1
+            possible_range[3] = len(client_list) 
+        # print("possible_range", possible_range)
+
+        # possible_client_list = [client_list[possible_range[0] : possible_range[1]], client_list[possible_range[2] : possible_range[3]]]
+        possible_client_list_1 = client_list[possible_range[0] : possible_range[1]]
+        possible_client_list_2 = client_list[possible_range[2] : possible_range[3]]
+        # print(possible_client_list_1, possible_client_list_2)
+        possible_client_list = [possible_client_list_1, possible_client_list_2]
+        possible_client_list = np.concatenate((
+            client_list[possible_range[0] : possible_range[1]],
+            client_list[possible_range[2] : possible_range[3]]))
+        # print("possible_client_list", possible_client_list)
+        
+        mask = possible_client_list != real_client_index_1
+        client_list_no_cl1 = np.array(possible_client_list[mask])
+        # print(client_list_no_cl1, type(client_list_no_cl1))
+        # print("\n\n")
+
+        # print()
+        real_client_index_2 = random.choice(client_list_no_cl1)
+
+    # output
+    where_cl1 = (np.where(client_list == real_client_index_1)[0])
+    where_cl2 = (np.where(client_list == real_client_index_2)[0])
+    number_clients = (abs(where_cl1 - where_cl2)+ 1)[0]
+
+    real_client_index = np.zeros(2, dtype=int)
+    if where_cl1 < where_cl2:
+        real_client_index[0] = real_client_index_1
+        real_client_index[1] = real_client_index_2
+    else:
+        real_client_index[1] = real_client_index_1
+        real_client_index[0] = real_client_index_2
+    
+    # print("real_client_index", real_client_index)
+    # print("number_clients", number_clients)
+
+    return (real_client_index, number_clients, True)
+
 
 def filter_clients_NO_max_frequ(sorted_data, n_days, n_clients):
 
@@ -1004,15 +1660,15 @@ def remove_add_client_NEW(n_vehicles, n_days, data, distance_matrix, closeness_m
     for day in range(n_days):    
 
         if initial_comb.schedule[day] == 1:
-            print("\n")
+            # print("\n")
             client_list = new_assigned_ordered_matrix[initial_comb.vehicle, day]
-            print(f"data: v{initial_comb.vehicle}, d{day}, cl{initial_comb.client}\n client_list: {client_list}")
+            # print(f"data: v{initial_comb.vehicle}, d{day}, cl{initial_comb.client}\n client_list: {client_list}")
             index = int((np.where(client_list == initial_comb.client))[0])
-            print("index", index)
+            # print("index", index)
             new_client_list = copy.copy(client_list)
-            print("new_client_list", new_client_list)
+            # print("new_client_list", new_client_list)
             new_client_list[index:len(new_client_list)-1] = client_list[index+1:len(new_client_list)]
-            print("new_client_list", new_client_list)
+            # print("new_client_list", new_client_list)
 
             new_assigned_ordered_matrix[initial_comb.vehicle, day] = new_client_list
             new_transp_demand_matrix[initial_comb.vehicle, day] -= data[initial_comb.client, conf.DEMAND_INDEX]
@@ -1020,20 +1676,20 @@ def remove_add_client_NEW(n_vehicles, n_days, data, distance_matrix, closeness_m
 
 
         if final_comb.schedule[day] == 1:
-            print("\n")
+            # print("\n")
             client_list = new_assigned_ordered_matrix[final_comb.vehicle, day]
             close_clients = [int(c) for c in closeness_matrix[final_comb.client] if c in client_list][:2]
-            print(f"data: v{final_comb.vehicle}, d{day}, cl{final_comb.client}\n client_list: {client_list}, close_clients: {close_clients}")
+            # print(f"data: v{final_comb.vehicle}, d{day}, cl{final_comb.client}\n client_list: {client_list}, close_clients: {close_clients}")
             indeces = [int((np.where(client_list == close_clients[0]))[0]), int((np.where(client_list == close_clients[1]))[0])]
-            print("indeces", indeces)
+            # print("indeces", indeces)
             indeces = np.sort(indeces)
-            print("indeces", indeces)
+            # print("indeces", indeces)
             new_client_list = copy.copy(client_list)
-            print("new_client_list", new_client_list)
+            # print("new_client_list", new_client_list)
             new_client_list[indeces[1]] = final_comb.client
-            print("new_client_list", new_client_list)
+            # print("new_client_list", new_client_list)
             new_client_list[indeces[1]+1:] = client_list[indeces[1]:len(client_list)-1]
-            print("new_client_list", new_client_list)
+            # print("new_client_list", new_client_list)
             
             new_assigned_ordered_matrix[final_comb.vehicle, day] = new_client_list
             new_transp_demand_matrix[final_comb.vehicle, day] += data[final_comb.client, conf.DEMAND_INDEX]
@@ -1054,7 +1710,7 @@ def update_current_solution(n_vehicles, n_days, n_clients, data, max_clients_kd,
         # if new solution is feasible:
         if new_solution.feasibility_vector.verify() == True:
             current_solution = copy.copy(new_solution)  # udate current solution
-            current_solution.print()
+            # current_solution.print()
             iteration = 0
         iteration +=1
     
@@ -1102,4 +1758,58 @@ def define_new_schedule_load(n_days, data, available_days, client):
         new_schedule = np.zeros(n_days)
 
     return new_schedule
+
+
+
+''' TEST '''
+
+def remove_add_multi_cl(n_days, data, initial_comb, final_comb, new_assigned_ordered_matrix, new_transp_demand_matrix):
+
+    # print("\nall_clients", new_assigned_ordered_matrix[initial_comb.vehicle, initial_comb.day])
+    client_list = np.array(copy.copy(new_assigned_ordered_matrix[initial_comb.vehicle, initial_comb.day]))
+    # print(initial_comb.client)
+    # print(client_list, initial_comb.client[0], initial_comb.client[1])
+    where_cl1 = np.where(client_list == initial_comb.client[0])[0][0]
+    where_cl2 = np.where(client_list == initial_comb.client[1])[0][0]
+    client_list = client_list[where_cl1 : (where_cl2+1)]
+
+    # print("\nclients:", initial_comb.client[0], initial_comb.client[1])
+    # print(where_cl1, where_cl2)
+    # print("remove_add", client_list)
+
+    for client_i in range(len(client_list)):
+
+        client_idx = client_list[client_i]
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_cl_1day(n_days, data, initial_comb, final_comb, new_assigned_ordered_matrix, new_transp_demand_matrix, client_idx)      
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = add_cl_1day(n_days, data, initial_comb, final_comb, new_assigned_ordered_matrix, new_transp_demand_matrix, client_idx)      
+
+    return (new_assigned_ordered_matrix, new_transp_demand_matrix)
+
+
+def remove_cl_1day(n_days, data, initial_comb, final_comb, new_assigned_ordered_matrix, new_transp_demand_matrix, client_idx):
+
+    # if initial_comb.schedule[day] == 1:
+    client_sequence = new_assigned_ordered_matrix[initial_comb.vehicle, initial_comb.day]
+    idx = np.where(client_sequence == client_idx)[0][0]    # Trova la posizione in cui compare il cliente da rimuovere
+    client_sequence[idx:-1] = client_sequence[idx+1:] # move to left
+    client_sequence[-1] = 0  # azzera l'ultimo
+
+    new_transp_demand_matrix[initial_comb.vehicle, initial_comb.day] -= data[client_idx, conf.DEMAND_INDEX]
+
+    return (new_assigned_ordered_matrix, new_transp_demand_matrix)
+
+
+def add_cl_1day(n_days, data, initial_comb, final_comb, new_assigned_ordered_matrix, new_transp_demand_matrix, client_idx):
+
+    # if final_comb.schedule[day] == 1:
+    client_sequence = new_assigned_ordered_matrix[final_comb.vehicle, final_comb.day]
+    # print("client_sequence", client_sequence)
+    idx = np.where(client_sequence == 0)[0][1]  # Trova la posizione in cui compare il cliente da aggiungere (il primo zero)
+    client_sequence[idx] = client_idx    # inserisce il nuovo cliente
+
+    new_transp_demand_matrix[final_comb.vehicle, final_comb.day] += data[client_idx, conf.DEMAND_INDEX]
+
+    return (new_assigned_ordered_matrix, new_transp_demand_matrix)
+
+
 

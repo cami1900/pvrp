@@ -5,6 +5,10 @@ import random
 import copy
 import conf
 
+
+''' MAIN FUNCRIONS '''
+
+# feasibility function considering the 1-vehicle constraint
 def check_feasibility_1vehicle(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, solution):
 
     # Initialize feasibility and verification vectors:
@@ -55,7 +59,73 @@ def check_feasibility_1vehicle(n_vehicles, n_days, n_clients, data, max_clients_
     return V_distances_matrix, V_loads_matrix, solution
 
 
+# feasibility function PVRP
+def check_feasibility_pvrp(n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, solution):
 
+    # Initialize feasibility and verification vectors:
+    # solution = copy.copy(given_solution)
+    # feasibility_vector = solution.feasibility_vector()
+    # verification_vector = solution.verification_vector()
+    # solution.fesibility_vector.initialize()
+    # solution.verification_vector.initialize()
+
+    # Create the Rotes matrix: 
+    # each matrix is n_clients x n_clients and a element(i, j) is =1 
+    # if the vehicle k in the day t goes from customer i to customer j
+    routes_matrix = define_routes(n_vehicles, n_days, n_clients, max_clients_kd, solution.assigned_ordered_matrix)
+ 
+    for client_i in range(1, n_clients):
+
+        # Create Ci_assign_matrix
+        Ci_assign_matrix = create_customer_matrix(n_vehicles, n_days, client_i, solution.assigned_ordered_matrix)
+        # print(f"Client {client_i} assignetion matrix:\n", Ci_assign_matrix)
+
+        # CONSTR 1: required frequency constr
+        solution = check_frequency(data, client_i, Ci_assign_matrix, solution)
+
+        # CONSTR 2: 1schedule-1vehicle contraint
+        # solution = check_sched_vehicle(data, client_i, Ci_assign_matrix, solution)
+
+        period_schedule = np.zeros(n_days, dtype=int)
+        for day in range(n_days):
+            visits_per_day = 0
+            for vehicle in range(n_vehicles):
+                visits_per_day += Ci_assign_matrix[vehicle, day]
+            period_schedule[day] = visits_per_day 
+        # actual_schedule = int(''.join(map(str, period_schedule)), 2)
+        actual_schedule = int(''.join(str(b) for b in period_schedule), 2)
+        possible_schedules = data[client_i, conf.VISIT_START_INDEX:]
+
+        if any(day_in_period > 1 for day_in_period in period_schedule) or not np.intersect1d(actual_schedule, possible_schedules).size:
+            solution.feasibility_vector.constr_2 = False
+
+
+        # CONSTR 4: for each client i there must be an outing arc (i, j)
+        solution = check_arc_existance(client_i, routes_matrix, Ci_assign_matrix, solution)
+
+        # CONSTR 5: flow conservetion -> (for each client i) for each outing arc (i, j) there must be an incoming arc (k, i)
+        solution = check_flow_conservation(client_i, routes_matrix, Ci_assign_matrix, solution)
+
+    # verify results: verify the total distance traveled
+    V_distances_matrix, solution = verify_distance(n_vehicles, n_days, n_clients, routes_matrix, distance_matrix, solution.route_dist_matrix, solution)
+
+    # verify results: verify the total load transported
+    V_loads_matrix, solution = verify_load(data, n_vehicles, n_days, n_clients, max_clients_kd, routes_matrix, solution.transp_demand_matrix, solution)
+
+    # CONSTR 3: vehicle capacity contraint
+    solution = check_capacity(n_vehicles, n_days, V_loads_matrix, vehicle_capacity, solution)
+
+    # CONSTR 6: subtour elimination
+    solution = check_subtour_elimination(n_vehicles, n_days, n_clients, routes_matrix, solution)
+
+    # Update feasibility and verification vectors:
+
+    
+    return V_distances_matrix, V_loads_matrix, solution
+
+
+
+''' SECONDARY FUNCTIONS'''
 
 def define_routes(n_vehicles, n_days, n_clients, max_clients_kd, assigned_ordered_matrix):
 

@@ -48,4 +48,4 @@ def merge_all_results(folder_path, output_excel_path):
 
 # Esempio di uso:
 if __name__ == "__main__":
-    merge_all_results(folder_path='out/results/results_43_500', output_excel_path='out/results/results_43_500/all_results_43_500.xlsx')
+    merge_all_results(folder_path='out/results/WorseSol_n3_500', output_excel_path='out/results/WorseSol_n3_500/all_results_WorseSol_n3_500t.xlsx')

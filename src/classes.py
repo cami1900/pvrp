@@ -110,6 +110,7 @@ class Move_combination:
         self.day = day_t
         self.schedule = schedule_s
         self.client = real_client_index
+        # self.linked_comb = linked_combinations
 
     def print(self):
         print(f"\nThe {self.status} combination:\n vehicle = {self.vehicle}\n day = {self.day}\n schedule = {self.schedule}\n client index = {self.client}")

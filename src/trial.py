@@ -20,7 +20,7 @@ def main():
 
     # # file_path = "data/p0_trial.txt"
     # file_index = 2
-    file_path = f"vrp_data/p02.txt"
+    file_path = f"data/p02.txt"
     distance_type = 1
 
     (n_vehicles, n_days, vehicle_capacity, data, sorted_data, n_clients, max_clients_kd, distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
@@ -55,14 +55,17 @@ def main():
 
     max_neighbour = 4
     # max_iteration_neigh = 500
-    max_iteration_vector = np.array([0, 0, 500, 500, 0])
+    max_iteration_vector = np.array([500, 500, 500, 500, 500])
     time_limit_VND = 7200   # 2h*60min*60sec = 7200sec
     time_limit_neigh = 7200  # 12min*60 sec = 900sec (=1/10)
     two_opt_iteration = 500
 
+    worse_sol_acceptance = False
     
-    (new_vnd_best_solution, new_sol_per_neigh, number_iterations_vector, time_vector) = algorithms.VND.VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
-                                                               current_solution, max_neighbour, max_iteration_vector, time_limit_VND, time_limit_neigh, two_opt_iteration)
+    (vnd_best_solution_0, new_sol_per_neigh, number_iterations_vector, time_vector) = algorithms.VND.VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+                                                               current_solution, max_neighbour, max_iteration_vector, time_limit_VND, time_limit_neigh, two_opt_iteration, worse_sol_acceptance)
+    
+    (vnd_best_solution_0.assigned_ordered_matrix, vnd_best_solution_0.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, vnd_best_solution_0.route_dist_matrix, vnd_best_solution_0.assigned_ordered_matrix)
 
     # tipe_per_iteration = time_vector/number_iterations_vector
     tipe_per_iteration = np.zeros(max_neighbour+1, dtype=float)
@@ -71,7 +74,29 @@ def main():
         if number_iterations_vector[neigh] != 0:
             tipe_per_iteration[neigh] = time_vector[neigh]/number_iterations_vector[neigh]
 
-    new_vnd_best_solution.print()
+    vnd_best_solution_0.print()
+    print("\nnew_sol_per_neigh", new_sol_per_neigh)
+    print("\nnumber_iterations_vector", number_iterations_vector)
+    print("\ntime_vector", time_vector)
+    print("\ntipe_per_iteration", tipe_per_iteration)
+    print("\n\n")
+
+
+    worse_sol_acceptance = True
+
+    (vnd_best_solution_1, new_sol_per_neigh, number_iterations_vector, time_vector) = algorithms.VND.VND_algorithm_condensed(n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+                                                               vnd_best_solution_0, max_neighbour, max_iteration_vector, time_limit_VND, time_limit_neigh, two_opt_iteration, worse_sol_acceptance)
+    
+    (vnd_best_solution_1.assigned_ordered_matrix, vnd_best_solution_1.route_dist_matrix) = algorithms.assign_route.two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, vnd_best_solution_1.route_dist_matrix, vnd_best_solution_1.assigned_ordered_matrix)
+
+    # tipe_per_iteration = time_vector/number_iterations_vector
+    tipe_per_iteration = np.zeros(max_neighbour+1, dtype=float)
+    print(tipe_per_iteration)
+    for neigh in range(max_neighbour+1):
+        if number_iterations_vector[neigh] != 0:
+            tipe_per_iteration[neigh] = time_vector[neigh]/number_iterations_vector[neigh]
+
+    vnd_best_solution_1.print()
     print("\nnew_sol_per_neigh", new_sol_per_neigh)
     print("\nnumber_iterations_vector", number_iterations_vector)
     print("\ntime_vector", time_vector)
@@ -83,9 +108,12 @@ def main():
     ''' PLOTS '''
     # utils.plot_manhattan_vehicles_routes(n_vehicles, n_days, data, assigned_ordered_matrix)
     utils.plot_euclidean_vehicles_routes(n_vehicles, n_days, data, solution_0.assigned_ordered_matrix)
-    utils.plot_euclidean_vehicles_routes(n_vehicles, n_days, data, new_vnd_best_solution.assigned_ordered_matrix)
+    utils.plot_euclidean_vehicles_routes(n_vehicles, n_days, data, vnd_best_solution_0.assigned_ordered_matrix)
+    utils.plot_euclidean_vehicles_routes(n_vehicles, n_days, data, vnd_best_solution_1.assigned_ordered_matrix)
 
-    # # utils.plot_group_clients(n_vehicles, n_days, data, solution_0.assigned_ordered_matrix, centroids, radii)
+    # centroids, radii = utils.calculate_grups_data(
+    #     n_vehicles, n_days, data, new_vnd_best_solution.assigned_ordered_matrix, radius_mode='mean_dist', fixed_radius=10)
+    # utils.plot_group_clients(n_vehicles, n_days, data, new_vnd_best_solution.assigned_ordered_matrix, centroids, radii)
 
     plt.show()
     # # return
