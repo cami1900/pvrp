@@ -162,7 +162,7 @@ def check_frequency(data, client_i, Ci_assign_matrix, solution):
 
     if float(actual_frequency) != required_frequency:
         solution.feasibility_vector.constr_1 = False
-        # print(f"Incorrect frequency for client {client_i}: expected {required_frequency}, found {actual_frequency}")
+        print(f"Incorrect frequency for client {client_i}: expected {required_frequency}, found {actual_frequency}")
 
     # else:
     #     if solution.fesibility_vector.constr_1 != False:
@@ -188,7 +188,7 @@ def check_sched_vehicle(data, client_i, Ci_assign_matrix, solution):
 
     if len(actual_schedules[actual_schedules != 0]) != 1 or not np.intersect1d(actual_schedules, possible_schedules).size:
         solution.feasibility_vector.constr_2 = False
-        # print(f"Incorrect assignation to vehicle-schedule of client {client_i}: it has been assigned to {len(actual_schedules[actual_schedules != 0])} vehicles and to {(actual_schedules[actual_schedules != 0])} scheedules")
+        print(f"Incorrect assignation to vehicle-schedule of client {client_i}: it has been assigned to {len(actual_schedules[actual_schedules != 0])} vehicles and to {(actual_schedules[actual_schedules != 0])} schedules")
     
     # else:
     #     if solution.fesibility_vector.constr_2 != False:
@@ -306,7 +306,7 @@ def check_capacity(n_vehicles, n_days, V_loads_matrix, vehicle_capacity, solutio
         for d in range(n_days):
             if V_loads_matrix[v, d] > vehicle_capacity:
                 solution.feasibility_vector.constr_3 = False
-                # print(f"Total load of vehicle {v} in the day {d} is bigger than total capacity: {V_loads_matrix[v, d]} > {vehicle_capacity}")
+                print(f"Total load of vehicle {v} in the day {d} is bigger than total capacity: {V_loads_matrix[v, d]} > {vehicle_capacity}")
 
     return solution
 
@@ -341,7 +341,7 @@ def check_subtour_elimination(n_vehicles, n_days, n_clients, routes_matrix, solu
         # if each summed_powers_matrix is equal to a matrix of only 1
         if np.any(summed_powers_matrix[(v, d)] != 1):
             solution.feasibility_vector.constr_6 = False
-            # print(f"There is a sub-tour in the planned tour of vehicle {v} in the day {d}" )
+            print(f"There is a sub-tour in the planned tour of vehicle {v} in the day {d}" )
 
     return solution
 

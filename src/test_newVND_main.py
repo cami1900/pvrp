@@ -27,16 +27,16 @@ def main():
     imgname = "out/results/vrp_tests/p12_1_999_3600.png"
 
     # VND parameters
-    repetitions_VND = [1, 999]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-    time_limit_VND = 300   # 2h*60min*60sec = 7200sec
+    repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
+    time_limit_VND = 5   # 2h*60min*60sec = 7200sec
     time_limit_neigh = 7200  # not used
 
     # neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "t_multiswap_k"]
-    neigh_order = ["move_kt"]
+    neigh_order = ["k_swap_t"]
 
     # initial_neigh_VND = [0, worse_sol_neigh, worse_sol_neigh]
     max_neighbour = (len(neigh_order) -1)
-    max_iteration_neigh = 16
+    max_iteration_neigh = 10
 
     two_opt_iteration = 500    
 

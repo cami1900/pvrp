@@ -70,7 +70,7 @@ def AVND_algorithm(
         
 
         while iteration <= max_iteration_neigh:
-            print(f"neighbour: {neighbour}, iteration: {iteration}")
+            print(f"\nneighbour: {neighbour}, iteration: {iteration}")
 
             # define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
             # current_solution, neigh_order, clients_NO_max_frequ)
@@ -85,10 +85,24 @@ def AVND_algorithm(
                     print("NO feasible solution determined")
                     continue
             
-            print(f"current_sol: {current_solution.assigned_ordered_matrix}")
-            print(f"initial_comb: {initial_comb.vehicle}, {initial_comb.day}, {initial_comb.client}")
-            print(f"initial_comb: {final_comb.vehicle}, {final_comb.day}, {final_comb.client}")
-            print(f"new_sol: {new_solution.assigned_ordered_matrix}")
+            # print(f"current_sol: {current_solution.assigned_ordered_matrix}")
+            #    ''' MOVE '''
+            # if (neigh_order[neighbour] == "k_move_t" or 
+            #     neigh_order[neighbour] == "t_move_k" or
+            #     neigh_order[neighbour] == "move_kt"):
+            #     print(f"initial_comb: {initial_comb.vehicle}, {initial_comb.day}, {initial_comb.client}")
+            #     print(f"initial_comb: {final_comb.vehicle}, {final_comb.day}, {final_comb.client}")
+            # #    ''' SWAP 1x1 '''
+            # elif (neigh_order[neighbour] == "k_swap_t" or 
+            #     neigh_order[neighbour] == "t_swap_k" or
+            #     neigh_order[neighbour] == "f_swap_kt" or
+            #     neigh_order[neighbour] == "swap_kt"):
+            #     print(f"initial_comb.comb_1: {initial_comb.comb_1.vehicle}, {initial_comb.comb_1.day}, {initial_comb.comb_1.client}")
+            #     print(f"initial_comb.comb_2: {initial_comb.comb_2.vehicle}, {initial_comb.comb_2.day}, {initial_comb.comb_2.client}")
+            #     print(f"final_comb.comb_1: {final_comb.comb_1.vehicle}, {final_comb.comb_1.day}, {final_comb.comb_1.client}")
+            #     print(f"final_comb.comb_2: {final_comb.comb_2.vehicle}, {final_comb.comb_2.day}, {final_comb.comb_2.client}")
+    
+            # print(f"new_sol: {new_solution.assigned_ordered_matrix}")
 
             ''' feasibility check '''
             # verify is new solution is feasible
@@ -100,7 +114,7 @@ def AVND_algorithm(
                 ''' verify NS status '''
                 # if NS is better than BS (0):
                 if new_solution.OBJ_tot_dist < best_solution.OBJ_tot_dist: 
-                    print("NS is better than BS")
+                    print("NS is better than BS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     print(f"best_sol_OBJ: {best_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
                     # udate best solution
@@ -117,8 +131,8 @@ def AVND_algorithm(
 
                 # if NS in better than CS (1):
                 elif new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist: 
-                    print("NS is better than CS")
-                    print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
+                    print("NS is better than CS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+                    print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} > new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
 
                     # udate current solution
@@ -134,7 +148,8 @@ def AVND_algorithm(
 
                 elif ws_counter == ws_counter_limit:
                     OBJ_limit_value = (current_solution.OBJ_tot_dist + worse_sol_percentage * current_solution.OBJ_tot_dist)
-                    print("NS is accepted")
+                    print("NS is accepted --------------------------------------------------------------------------------")
+                    print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
                     # if NS is accepted (2):
                     if new_solution.OBJ_tot_dist < OBJ_limit_value:   
@@ -157,7 +172,12 @@ def AVND_algorithm(
                     total_run += 1
 
             else:
-                print("NS is not feasible")
+                print(f"NS is not feasible")
+                new_solution.feasibility_vector.print()
+                print("ROUTES MATRIX:", new_solution.assigned_ordered_matrix)
+                # print(f"initial_combos \ncomb_1: c{initial_comb.comb_1.client} v{initial_comb.comb_1.vehicle}, d{initial_comb.comb_1.day} \ncomb_2: c{initial_comb.comb_2.client} v{initial_comb.comb_2.vehicle}, d{initial_comb.comb_2.day}")
+                # print(f"final_combos \ncomb_1: c{initial_comb.comb_1.client} v{final_comb.comb_1.vehicle}, d{final_comb.comb_1.day} \ncomb_2: c{initial_comb.comb_2.client} v{final_comb.comb_2.vehicle}, d{final_comb.comb_2.day}")
+                # print(new_solution.assigned_ordered_matrix)
                 # update parameters
                 reward_points += rewards_values[3]
                 iteration += 1
@@ -495,26 +515,31 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
     # check if the operation is feasible --> new schedule:
         # feasible 
             # -->> perform the operation (END)
-                                                    # not feasible and there is a "2" 
-                                                        # -->> the operation cannot be performed (STOP, next iteration)
-        # not feasible (but all "1" )
+        # not feasible 
             # -->> perform the operation, remove linked_com and apply the algorithm
 
     (schedule_index, possible_schedules, linked_combinations) = check_schedule(n_days, n_vehicles, data, neighbour, neigh_order, current_solution, initial_comb_main, final_comb_main)
-    print("linked_combinations:", linked_combinations)
+    # print("\n\nlinked_combinations: **********************\n", linked_combinations)
     # feasible
     if schedule_index == True:
         new_solution = do_operation(neighbour, neigh_order, n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb_main, final_comb_main)
+        print("schedule feasible: OP --> END!")
         return (initial_comb_main, final_comb_main, new_solution, True)
         # (END)
 
     # unfeasible
     new_solution = do_operation(neighbour, neigh_order, n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb_main, final_comb_main)
-    print("ho fatto l'operazione principale (s2)")
-    print(f"{new_solution.assigned_ordered_matrix[initial_comb_main.vehicle, initial_comb_main.day]}")
+    print("schedule unfeasible: OP + algoritmo")
+    print("CURRENT SOLUTION")
+    client_combos = find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, current_solution, initial_comb_main)
+    print("NEW SOLUTION")
+    client_combos = find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, new_solution, initial_comb_main)
+    print("linked combintions:", linked_combinations)
+    # print(f"{new_solution.assigned_ordered_matrix[initial_comb_main.vehicle, initial_comb_main.day]}")
     
-    new_solution = remove_linked_comb(data, neigh_order, neighbour, initial_comb_main, new_solution, linked_combinations)
+    new_solution = remove_linked_comb(data, neigh_order, neighbour, initial_comb_main, final_comb_main, new_solution, linked_combinations)
     print("ho rimosso le linked combinations")
+    client_combos = find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, new_solution, initial_comb_main)
 
     ''' step 3 '''
     # apply the algorithm to reassign the linked_comb (goal: respect the schedule)
@@ -541,6 +566,7 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
 
     if combination_index == False:
         new_solution = 0
+        print("impossibile trovare new_combos per le linked_combos (capacity)")
         return (initial_comb_main, final_comb_main, new_solution, False)
 
     ' step 3.3 '
@@ -549,6 +575,7 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
 
     if schedule_index == False:
         new_solution = 0
+        print("le poss_combos per le linked_combos non rispettano la schedule (schedule)")
         return (initial_comb_main, final_comb_main, new_solution, False)
 
     # choose a random schedule
@@ -561,7 +588,9 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
     
     ' step 3.5 '
     # assign client and optimize routes:
-    new_solution = complete_new_solution(neigh_order, neighbour, data,  n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution, selected_combinations, initial_comb_main)
+    new_solution = complete_new_solution(neigh_order, neighbour, data,  n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution, selected_combinations, linked_combinations, initial_comb_main)
+    print("ho completato la nuova soluzione --> END.")
+    client_combos = find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, new_solution, initial_comb_main)
     # (END)
 
     return (initial_comb_main, final_comb_main, new_solution, True)
@@ -715,7 +744,7 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
 
         ## si potrebbe togliere!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         schedule_i2 = np.zeros(n_days)
-        schedule_i2[day_i] = 1
+        schedule_i2[day_i2] = 1
 
         initial_comb_2 = classes.Move_combination('initial_2', vehicle_i2, day_i2, schedule_i2, real_client_index_2)
 
@@ -853,6 +882,8 @@ def def_final_comb(neighbour, n_vehicles, n_days, neigh_order, initial_comb):
         final_comb_1 = classes.Move_combination('final_1', initial_comb.comb_2.vehicle, initial_comb.comb_2.day, initial_comb.comb_2.schedule, initial_comb.comb_1.client)
         final_comb_2 = classes.Move_combination('final_2', initial_comb.comb_1.vehicle, initial_comb.comb_1.day, initial_comb.comb_1.schedule, initial_comb.comb_2.client)
         final_comb = classes.SwapCombination('final', final_comb_1, final_comb_2)
+        # final_comb_1.print()
+        # final_comb_2.print()
         # return final_comb
 
     ''' MULTI SWAP '''
@@ -921,7 +952,8 @@ def check_schedule(n_days, n_vehicles, data, neighbour, neigh_order, current_sol
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         possible_schedules_1 = def_possible_schedules(n_days, data, initial_comb_main.comb_1)
         possible_schedules_2 = def_possible_schedules(n_days, data, initial_comb_main.comb_2)
@@ -938,10 +970,10 @@ def check_schedule(n_days, n_vehicles, data, neighbour, neigh_order, current_sol
     # NO schedule breakage
     elif (neigh_order[neighbour] == "t_move_k" or 
           neigh_order[neighbour] == "t_swap_k" or 
-          neigh_order[neighbour] == "f_swap_kt" or 
           neigh_order[neighbour] == "t_multiswap_k"):
         
         possible_schedules = 0
+        linked_combinations = 0
         
         return (True, possible_schedules, linked_combinations)
 
@@ -962,46 +994,76 @@ def do_operation(neighbour, neigh_order, n_vehicles, n_days, data, distance_matr
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
         neigh_order[neighbour] == "t_swap_k" or
+        neigh_order[neighbour] == "f_swap_kt" or
         neigh_order[neighbour] == "swap_kt"):
 
         # New solution:
         new_solution = swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)    
         
 
-    elif neigh_order[neighbour] == "f_swap_kt":
+    # elif neigh_order[neighbour] == "f_swap_kt":
 
-        # New solution:
-        new_solution = swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb) 
-        # Optimize routes:
-        (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, final_comb.comb_1.vehicle, final_comb.comb_1.day)
-        (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, final_comb.comb_2.vehicle, final_comb.comb_2.day)
+    #     # New solution:
+    #     new_solution = swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb) 
+    #     # # Optimize routes:
+    #     # (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, final_comb.comb_1.vehicle, final_comb.comb_1.day)
+    #     # (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, final_comb.comb_2.vehicle, final_comb.comb_2.day)
 
-        # Move linked combinations:
-        # identifica dove sono --> lo sai già dal schedule_check
-        (new_schedule_1, linked_combinations_1) = def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb.comb_1, final_comb.comb_1)
-        (new_schedule_2, linked_combinations_2) = def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb.comb_2, final_comb.comb_2)
+    #     # Move linked combinations:
+    #     # identifica dove sono --> lo sai già dal schedule_check
+    #     (new_schedule_1, linked_combinations_1) = def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb.comb_1, final_comb.comb_1)
+    #     (new_schedule_2, linked_combinations_2) = def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb.comb_2, final_comb.comb_2)
 
-        if len(linked_combinations_1) == len(linked_combinations_2):
-            for comb in range(len(linked_combinations_1)):
-                (vehicle_comb1, day_comb1) = linked_combinations_1[comb]
-                (vehicle_comb2, day_comb2) = linked_combinations_2[comb]
-                (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = remove_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
-                                                                                            day_comb1, vehicle_comb1, initial_comb.comb_1.client)
-                (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = remove_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
-                                                                                            day_comb2, vehicle_comb2, initial_comb.comb_2.client)
-                (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = add_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
-                                                                                         day_comb2, vehicle_comb2, initial_comb.comb_1.client)
-                (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = add_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
-                                                                                         day_comb1, vehicle_comb1, initial_comb.comb_2.client)
+    #     if len(linked_combinations_1) != len(linked_combinations_2):
+    #         new_solution = 0
+    #         error_index = False
+    #         return new_solution
+            
+    #     for comb in range(len(linked_combinations_1)):
+            
+    #         (vehicle_comb1, day_comb1) = linked_combinations_1[comb]
+    #         (vehicle_comb2, day_comb2) = linked_combinations_2[comb]
+
+    #         print(f"comb_1: v{vehicle_comb1}, d{day_comb1}")
+    #         print(f"comb_2: v{vehicle_comb2}, d{day_comb2}")
+
+    #         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = remove_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
+    #                                                                                     day_comb1, vehicle_comb1, initial_comb.comb_1.client)
+    #         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = remove_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
+    #                                                                                     day_comb2, vehicle_comb2, initial_comb.comb_2.client)
+    #         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = add_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
+    #                                                                                     day_comb2, vehicle_comb2, initial_comb.comb_1.client)
+    #         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = add_client_NEW(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
+    #                                                                                     day_comb1, vehicle_comb1, initial_comb.comb_2.client)
         
-        # new_solution.assigned_ordered_matrix = new_assigned_ordered_matrix
-        # new_solution.transp_demand_matrix = new_transp_demand_matrix
+    #     # Optimize routes and update distances:
+    #     for comb in range(len(linked_combinations_1)):
+    #         (vehicle_comb1, day_comb1) = linked_combinations_1[comb]
+    #         (vehicle_comb2, day_comb2) = linked_combinations_2[comb]
+    #         # Optimize routes:
+    #         # (n_vehicles, n_days, distance_matrix, closeness_matrix, new_route_dist_matrix, new_assigned_ordered_matrix, vehicle, day)
+    #         (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, 
+    #                                                                                      new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, 
+    #                                                                                      vehicle_comb1, day_comb1)
+    #         (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, 
+    #                                                                                      new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, 
+    #                                                                                      vehicle_comb2, day_comb2)
+
+
+    #     # Update the OBJECTIVE value
+    #     new_solution.OBJ_tot_dist = algorithms.assign_route.calculate_tot_dist (n_vehicles, n_days, new_solution.route_dist_matrix, new_solution.OBJ_tot_dist)
+
+    #     # # Save new solution:
+    #     # new_solution = classes.Solution(new_OBJ_tot_dist, new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix)
+
+    #     # new_solution.assigned_ordered_matrix = new_assigned_ordered_matrix
+    #     # new_solution.transp_demand_matrix = new_transp_demand_matrix
 
 
     return new_solution
 
 
-def remove_linked_comb(data, neigh_order, neighbour, initial_comb, new_solution, linked_combinations):
+def remove_linked_comb(data, neigh_order, neighbour, initial_comb, final_comb, new_solution, linked_combinations):
 
     new_assigned_ordered_matrix = new_solution.assigned_ordered_matrix
     new_transp_demand_matrix = new_solution.transp_demand_matrix
@@ -1009,23 +1071,33 @@ def remove_linked_comb(data, neigh_order, neighbour, initial_comb, new_solution,
 #    ''' MOVE '''
     if (neigh_order[neighbour] == "k_move_t" or 
         neigh_order[neighbour] == "move_kt"):
-        print("sto rimuovendo le linked combinations...")
-        print("linked_combinations:", linked_combinations)
-        for item in linked_combinations:
-            print(item, type(item))
+        # print("sto rimuovendo le linked combinations...")
+        # print("linked_combinations:", linked_combinations)
+        # for item in linked_combinations:
+        #     print(item, type(item))
 
         for comb_vehicle, comb_day in linked_combinations:
-            print(f"linked_comb: v{comb_vehicle}, d{comb_day}, c{initial_comb.client}")
+            # print(f"linked_comb: v{comb_vehicle}, d{comb_day}, c{initial_comb.client}")
+            # if comb_vehicle == final_comb.vehicle and comb_day == final_comb.day:
+            #     continue
             (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                                         comb_day, comb_vehicle, initial_comb.client)
-            print(f"client removed: {new_assigned_ordered_matrix[comb_vehicle, comb_day]}")
+            # print(f"client removed: {new_assigned_ordered_matrix[comb_vehicle, comb_day]}")
+    
     #    ''' SWAP 1x1 '''
-    elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt"):
+    elif (neigh_order[neighbour] == "k_swap_t" or
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt"):
+        # print(f"client{initial_comb.comb_1.client}, linked_combos: {linked_combinations[0]}")
+        # print(f"client{initial_comb.comb_2.client}, linked_combos: {linked_combinations[1]}")
         for comb_vehicle, comb_day in linked_combinations[0]:
+            # if comb_vehicle == final_comb.comb_1.vehicle and comb_day == final_comb.comb_1.day:
+            #     continue
             (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                                         comb_day, comb_vehicle, initial_comb.comb_1.client)
         for comb_vehicle, comb_day in linked_combinations[1]:
+            # if comb_vehicle == final_comb.comb_2.vehicle and comb_day == final_comb.comb_2.day:
+            #     continue
             (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                                         comb_day, comb_vehicle, initial_comb.comb_2.client)
 
@@ -1048,11 +1120,15 @@ def update_poss_schedules(neigh_order, neighbour, all_possible_schedules, final_
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         possible_schedules_1 = find_schedules(all_possible_schedules[0], final_comb.comb_1.schedule)
         possible_schedules_2 = find_schedules(all_possible_schedules[1], final_comb.comb_2.schedule)
         possible_schedules = [possible_schedules_1, possible_schedules_2]
+        # print("possible schedules based on chosen day:")
+        # print(f"client{final_comb.comb_1.client}, day{final_comb.comb_1.day}-{final_comb.comb_1.schedule}, schedules-->{possible_schedules_1}")
+        # print(f"client{final_comb.comb_2.client}, day{final_comb.comb_2.day}, schedules-->{possible_schedules_2}")
 
         if not possible_schedules_1 or not possible_schedules_2:
             possible_schedules = 0
@@ -1074,7 +1150,8 @@ def def_poss_combinations(neigh_order, neighbour, n_days, n_vehicles, final_comb
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         possible_combinations_1 = find_poss_combinations(n_days, n_vehicles, final_comb.comb_1.day, possible_schedules[0])
         possible_combinations_2 = find_poss_combinations(n_days, n_vehicles, final_comb.comb_2.day, possible_schedules[1])
@@ -1102,7 +1179,8 @@ def check_capacity_comb(neigh_order, neighbour, data, vehicle_capacity, all_poss
         
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         possible_combinations_1 = find_capacity_comb(data, vehicle_capacity, new_solution, all_poss_combinations[0], final_comb.comb_1.client)
         possible_combinations_2 = find_capacity_comb(data, vehicle_capacity, new_solution, all_poss_combinations[1], final_comb.comb_2.client)
@@ -1130,7 +1208,8 @@ def def_valid_schedules(neigh_order, neighbour, n_days, possible_combinations, p
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         valid_schedules_1 = find_valid_sched(n_days, possible_combinations[0], possible_schedules[0])
         valid_schedules_2 = find_valid_sched(n_days, possible_combinations[1], possible_schedules[1])
@@ -1155,7 +1234,8 @@ def def_selected_schedule(neigh_order, neighbour, valid_schedules):
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         selected_schedule_1 = random.choice(valid_schedules[0])
         selected_schedule_2 = random.choice(valid_schedules[1])
@@ -1175,7 +1255,8 @@ def def_selected_combinations(neigh_order, neighbour, n_days, selected_schedule,
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
         selected_combinations_1 = find_choose_linked_comb(n_days, selected_schedule[0], possible_combinations[0], final_comb.comb_1)
         selected_combinations_2 = find_choose_linked_comb(n_days, selected_schedule[1], possible_combinations[1], final_comb.comb_2)
@@ -1185,7 +1266,7 @@ def def_selected_combinations(neigh_order, neighbour, n_days, selected_schedule,
     return selected_combinations
 
 
-def complete_new_solution(neigh_order, neighbour, data, n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution, selected_combinations, initial_comb):
+def complete_new_solution(neigh_order, neighbour, data, n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution, selected_combinations, linked_combinations, initial_comb):
 
     new_assigned_ordered_matrix = new_solution.assigned_ordered_matrix
     new_transp_demand_matrix = new_solution.transp_demand_matrix
@@ -1199,8 +1280,10 @@ def complete_new_solution(neigh_order, neighbour, data, n_vehicles, n_days, dist
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or 
+          neigh_order[neighbour] == "swap_kt" ):
 
+        # print(f"selected combos, cl_1:", selected_combinations[0])
         for comb_vehicle, comb_day in selected_combinations[0]:
             (new_assigned_ordered_matrix, new_transp_demand_matrix) = add_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, comb_day, comb_vehicle, initial_comb.comb_1.client)
 
@@ -1213,17 +1296,23 @@ def complete_new_solution(neigh_order, neighbour, data, n_vehicles, n_days, dist
     # optimize routes:
     #    ''' MOVE '''
     if (neigh_order[neighbour] == "k_move_t" or 
-        neigh_order[neighbour] == "t_move_k"):
+        neigh_order[neighbour] == "move_kt"):
         for comb_vehicle, comb_day in selected_combinations:
             (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
+        for comb_vehicle, comb_day in linked_combinations:
+            (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
+
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
-        neigh_order[neighbour] == "swap_kt" ):
+          neigh_order[neighbour] == "f_swap_kt" or
+          neigh_order[neighbour] == "swap_kt" ):
         for comb_vehicle, comb_day in selected_combinations[0]:
-            # new_route_dist_matrix, new_assigned_ordered_matrix
-            # n_vehicles, n_days, distance_matrix, closeness_matrix, new_route_dist_matrix, new_assigned_ordered_matrix, vehicle, day
             (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
         for comb_vehicle, comb_day in selected_combinations[1]:
+            (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
+        for comb_vehicle, comb_day in linked_combinations[0]:
+            (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
+        for comb_vehicle, comb_day in linked_combinations[1]:
             (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix, new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix, comb_vehicle, comb_day)
 
     # calculate new OBJ:
@@ -1235,6 +1324,36 @@ def complete_new_solution(neigh_order, neighbour, data, n_vehicles, n_days, dist
 
 # SECONDARY FUNCTIONS 
 
+def find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, current_solution, initial_comb):
+
+    #    ''' MOVE '''
+    if (neigh_order[neighbour] == "k_move_t" or 
+        neigh_order[neighbour] == "move_kt"):
+        clients = [initial_comb.client]
+    
+    #    ''' SWAP 1x1 '''
+    elif (neigh_order[neighbour] == "k_swap_t" or 
+          neigh_order[neighbour] == "f_swap_kt" or
+          neigh_order[neighbour] == "swap_kt" ):
+        clients = [initial_comb.comb_1.client, initial_comb.comb_2.client]
+    
+
+    for client in clients: 
+        client_combos = []
+        for vehicle in range(n_vehicles):
+            for day in range(n_days):
+                client_list = current_solution.assigned_ordered_matrix[vehicle, day]
+
+                if not np.isin(client, client_list):
+                    continue
+
+                client_combos.append((vehicle, day))
+
+        print(f"client{client}, f{data[client, conf.FREQ_VISIT_INDEX]} --> combos: {client_combos}")
+
+    return client_combos
+
+#-------------------------------------------------
 
 def pick_client(current_solution, vehicle_i, day_i, clients_filtred, avoid_client):
 
@@ -1347,23 +1466,27 @@ def def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb_ma
 
     new_schedule = np.zeros(n_days)
     linked_combinations = []
+
+    # print("\n\ndefine linked_combinations ------------------------------------------")
+    # print("cliente:", initial_comb_main.client)
+    # print("comb. iniziale:", initial_comb_main.vehicle, initial_comb_main.day)
+    
     for vehicle in range(n_vehicles):
         for day in range(n_days):
             client_list = current_solution.assigned_ordered_matrix[vehicle, day]
-            print("cliente:", initial_comb_main.client)
-            print("comb. iniziale:", initial_comb_main.vehicle, initial_comb_main.day)
-            print(f" v{vehicle}, d{day} lista: {client_list}")
+            
+            # print(f" v{vehicle}, d{day} lista: {client_list}")
 
             if not np.isin(initial_comb_main.client, client_list):
                 continue
-            if vehicle == initial_comb_main.vehicle and day == initial_comb_main.day:
+            if vehicle == initial_comb_main.vehicle and day == initial_comb_main.day:   # prima c'era initial_comb, perché??
                 continue
 
-            print(f"il cliente {initial_comb_main.client} è nella combinazione v{vehicle}, d{day}")
             linked_combinations.append((vehicle, day))
-            print("linked_combinations:", linked_combinations)
             new_schedule[day] = 1
-            print("new_schedule:", new_schedule)
+            # print(f"il cliente {initial_comb_main.client} è nella combinazione v{vehicle}, d{day}")
+            # print("linked_combinations:", linked_combinations)
+            # print("new_schedule:", new_schedule)
 
 
             # if (np.isin(initial_comb_main.client, client_list) and 
@@ -1376,6 +1499,8 @@ def def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb_ma
             #     print("new_schedule:", new_schedule)
     new_schedule[initial_comb_main.day] = 0
     new_schedule[final_comb_main.day] = 1
+
+    # print("\nnew_schedule:", new_schedule)
 
     # # update linked combinations:
     # initial_comb_main.linked_comb = linked_combinations
@@ -1438,12 +1563,17 @@ def swap_operation(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
 
     (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_client_NEW(data,new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                                 initial_comb.comb_1.day, initial_comb.comb_1.vehicle, initial_comb.comb_1.client)
+    print(f"removed c{initial_comb.comb_1.client} --> {new_assigned_ordered_matrix[initial_comb.comb_1.vehicle, initial_comb.comb_1.day]}")
     (new_assigned_ordered_matrix, new_transp_demand_matrix) = add_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                              final_comb.comb_1.day, final_comb.comb_1.vehicle, final_comb.comb_1.client)
+    print(f"added c{final_comb.comb_1.client} --> {new_assigned_ordered_matrix[final_comb.comb_1.vehicle, final_comb.comb_1.day]}")
+
     (new_assigned_ordered_matrix, new_transp_demand_matrix) = remove_client_NEW(data,new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                                 initial_comb.comb_2.day, initial_comb.comb_2.vehicle, initial_comb.comb_2.client)
+    print(f"removed c{initial_comb.comb_2.client} --> {new_assigned_ordered_matrix[initial_comb.comb_2.vehicle, initial_comb.comb_2.day]}")
     (new_assigned_ordered_matrix, new_transp_demand_matrix) = add_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
                                                                              final_comb.comb_2.day, final_comb.comb_2.vehicle, final_comb.comb_2.client)
+    print(f"added c{final_comb.comb_2.client} --> {new_assigned_ordered_matrix[final_comb.comb_2.vehicle, final_comb.comb_2.day]}")
 
     # Reorganize the clients (best route) and update the Route distances matrix
     # (new_route_dist_matrix, new_assigned_ordered_matrix) = find_best_route(n_vehicles, n_days, distance_matrix, closeness_matrix, initial_comb.comb_1, final_comb.comb_1, new_route_dist_matrix, new_assigned_ordered_matrix)
@@ -1495,6 +1625,9 @@ def remove_client_NEW(data, new_assigned_ordered_matrix, new_transp_demand_matri
     # print("client", client)
     # print("\n\n")
     idx = np.where(client_sequence == client)[0][0]    # Trova la posizione in cui compare il cliente da rimuovere
+    print("\nclient_sequence", client_sequence)
+    print(f"v{initial_vehicle}, d{initial_day}, client{client}")
+    print("where", idx)
     client_sequence[idx:-1] = client_sequence[idx+1:] # move to left
     client_sequence[-1] = 0  # azzera l'ultimo
 
@@ -1557,6 +1690,74 @@ def optimize_single_route(n_vehicles, n_days, distance_matrix, closeness_matrix,
     new_route_dist_matrix += distances_matrix
 
     return (new_route_dist_matrix, new_assigned_ordered_matrix)
+
+
+# def calculate_distances_CLOSNESS_line_route(n_vehicles, n_days, S_poss_assign_matrix, S_assigned_cust_matrix, distance_matrix, closeness_matrix):
+#     S_distances_matrix = np.zeros((n_vehicles, n_days), dtype=float)
+
+#     for vehicle_k in range(n_vehicles):
+#         for day_t in range(n_days):
+
+#             if S_poss_assign_matrix[vehicle_k][day_t] == 0:
+#                 continue  # Nessun cliente da assegnare
+
+#             # Estrai i clienti assegnati, rimuovi zeri e converti in lista
+#             client_list = S_assigned_cust_matrix[vehicle_k][day_t]
+#             client_list = client_list[client_list != 0].astype(int).tolist()
+
+#             if len(client_list) == 0:
+#                 continue  # Nessun cliente utile
+
+#             route = [0] * len(client_list)
+
+#             # Primo cliente: più vicino al deposito (nodo 0)
+#             first = next((c for c in closeness_matrix[0] if c in client_list), None)
+#             if first is None:
+#                 continue
+#             route[0] = first
+#             client_list.remove(first)
+
+#             # Inserisci i restanti clienti greedy
+#             idx = 1
+
+#             while client_list:
+#                 # Inserimento 
+#                 prev_cl = int(route[idx - 1])
+#                 next_cl = next((c for c in closeness_matrix[prev_cl] if c in client_list), None)
+#                 if next_cl is not None:
+#                     route[idx] = next_cl
+#                     client_list.remove(next_cl)
+#                     idx += 1
+#                 else:
+#                     break  # Nessun cliente vicino trovato
+
+#             # Chiudi il percorso aggiungendo il deposito all'inizio e alla fine
+#             route = [0] + [int(r) for r in route if r != 0] + [0]
+
+#             # Calcolo distanza totale del percorso
+#             try:
+#                 route_distance = sum(distance_matrix[route[i], route[i + 1]] for i in range(len(route) - 1))
+#             except IndexError as e:
+#                 print(f"❌ Errore nell'accesso alla distance_matrix: {e}")
+#                 route_distance = 999999
+
+#             S_distances_matrix[vehicle_k, day_t] = route_distance
+
+#             # Salva il percorso nel tensor 3D
+#             S_assigned_cust_matrix[vehicle_k, day_t, :len(route)] = route
+
+#             # print(f"✔️ Veicolo {vehicle_k}, Giorno {day_t}, Percorso: {route}, Distanza: {route_distance}")
+
+#     return S_distances_matrix, S_assigned_cust_matrix
+
+
+# def calculate_tot_dist (n_vehicles, n_days, route_dist_matrix, OBJ_tot_dist):
+
+#     for vehicle_k in range(n_vehicles):
+#         for day_t in range(n_days):
+#             OBJ_tot_dist += route_dist_matrix[vehicle_k][day_t]
+
+#     return(OBJ_tot_dist)
 
 
 def find_schedules(all_possible_schedules, final_comb_schedule):
