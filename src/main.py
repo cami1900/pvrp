@@ -12,8 +12,6 @@ import algorithms.feasibility_function_POOP
 import utils
 import algorithms
 
-# this is a comment to understand git
-
 
 def main():
 
