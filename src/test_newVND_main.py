@@ -6,6 +6,8 @@ import random
 import random2
 import copy
 import time
+import json
+import os 
 
 import algorithms
 import algorithms.VND
@@ -15,6 +17,19 @@ import algorithms.feasibility_function_POOP
 import utils
 
 
+# def save_solution(sol, file_path_out):
+#     os.makedirs(os.path.dirname(file_path_out), exist_ok=True)
+
+#     data = sol.__dict__.copy()
+
+#     # Converte tutti gli ndarray in liste
+#     for key, value in data.items():
+#         if isinstance(value, np.ndarray):
+#             data[key] = value.tolist()
+
+#     with open(file_path_out, "w") as f:
+#         json.dump(data, f, indent=4)
+
 
 def main():
 
@@ -23,20 +38,24 @@ def main():
     file_path = "data/p02.txt"     # type name of file, ex: p02.txt
     distance_type = 1       # select: Euclidean = 1, Manhattan = 2
 
+    # assicurati che la cartella esista
+    os.makedirs("out/results/similarity_test", exist_ok=True)
+    file_path_out = "out/results/similarity_test/solution_base.txt"
+
     filename = "out/results/vrp_tests/p12_1_999_3600.xlsx"
     imgname = "out/results/vrp_tests/p12_1_999_3600.png"
 
     # VND parameters
     repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-    time_limit_VND = 5   # 2h*60min*60sec = 7200sec
+    time_limit_VND = 120   # 2h*60min*60sec = 7200sec
     time_limit_neigh = 7200  # not used
 
     # neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "t_multiswap_k"]
-    neigh_order = ["k_swap_t"]
+    neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt"]
 
     # initial_neigh_VND = [0, worse_sol_neigh, worse_sol_neigh]
     max_neighbour = (len(neigh_order) -1)
-    max_iteration_neigh = 10
+    max_iteration_neigh = 200
 
     two_opt_iteration = 500    
 
@@ -51,7 +70,10 @@ def main():
     for rep in range(repetitions_VND[1]):
         worse_sol_acc_VND[rep + repetitions_VND[0]] = True
    
-
+    # A-VND parameters ---------------------------------- #
+    ws_counter_limit = 200
+    initial_score = 3
+    rewards_values = [8, 4, 2, 1] 
 
     
     '''-----------------------------------------------------------------------------------------------------------------------'''
@@ -100,9 +122,7 @@ def main():
     tot_iteration_VND = 0
 
     '--------------------------------------------------------------------------------'
-    ws_counter_limit = 200
-    initial_score = 3
-    rewards_values = [8, 4, 2, 1]
+    
 
     start_time_VND = time.process_time()
 
@@ -110,7 +130,7 @@ def main():
     print("  Starting algorithm...   ")
     print("**************************")
 
-    (best_solution, solution_history) = algorithms.VND_new.AVND_algorithm(
+    (best_solution, solution_history, neigh_out_parameters) = algorithms.VND_new.AVND_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
         current_solution, best_solution, 
         time_limit_VND, 
@@ -130,9 +150,15 @@ def main():
     # print("all_best_solutions_VND", all_best_solutions_VND)
     print("initial solution OBJ", solution_0.OBJ_tot_dist)
     print("best solution OBJ", best_solution.OBJ_tot_dist)
+    print(f"neigh_out_parameters: \n{neigh_out_parameters}\n\n")
     # print("best solution")
     # best_solution.print()
     print("\n\n")
+
+    # ''' SAVE SOLUTION '''
+    # save_solution(best_solution, file_path_out)
+
+
 
     # utils.save_vnd_results_in_excel(
     #     filename, 
