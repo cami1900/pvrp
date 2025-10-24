@@ -37,7 +37,7 @@ def AVND_algorithm(
     # store data
     new_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
     best_sol_per_neigh = np.zeros((max_neighbour+1), dtype=int)
-    neigh_out_parameters = np.zeros((max_neighbour+1, 4), dtype=float)
+    neigh_out_parameters = np.zeros((7, max_neighbour+1), dtype=float)
     time_vector = np.zeros(max_neighbour+1, dtype=float)
     solution_history = []
 
@@ -52,10 +52,20 @@ def AVND_algorithm(
     start_time_VND = time.process_time()
     start_time_neigh = time.process_time()
 
+    # save initial data
+    solution_history.append((
+    best_solution.OBJ_tot_dist,
+    current_solution.OBJ_tot_dist,
+    0,
+    0,
+    0,
+    *score_neigh
+    ))
+
 
     ''' VND ALGORITHM: -------------------------------------------------------------------------------------------------------------------------------------------'''
 
-    print("\n START ALGORITHM A-VND")
+    # print("\n START ALGORITHM A-VND")
 
     while (time.process_time() - start_time_VND) < time_limit_VND:
 
@@ -68,10 +78,12 @@ def AVND_algorithm(
         ws_counter = 0
         total_run = 0
         reward_points = 0
+        # attualmente "iteration" e "total_run" sono equivalenti
+        # se si volesse rimanere dentro il neighborhood e azzerare le iterations, allora avranno valori differenti
         
 
         while iteration <= max_iteration_neigh:
-            print(f"\nneighbour: {neighbour}, iteration: {iteration}")
+            # print(f"\nneighbour: {neighbour}, iteration: {iteration}")
 
             # define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
             # current_solution, neigh_order, clients_NO_max_frequ)
@@ -81,12 +93,13 @@ def AVND_algorithm(
                     neighbour, 
                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
                     current_solution, neigh_order, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
+            
             if error_index == False:    # solution has not been defined
                     reward_points += rewards_values[3]
                     iteration += 1
                     ws_counter += 1
                     total_run += 1
-                    print("NO feasible solution determined")
+                    # print("NO feasible solution determined")
                     continue
 
             ''' feasibility check '''
@@ -99,8 +112,8 @@ def AVND_algorithm(
                 ''' verify NS status '''
                 # if NS is better than BS (0):
                 if new_solution.OBJ_tot_dist < best_solution.OBJ_tot_dist: 
-                    print("NS is better than BS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    print(f"best_sol_OBJ: {best_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
+                    # print("NS is better than BS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    # print(f"best_sol_OBJ: {best_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
                     # udate best solution
                     best_solution = copy.deepcopy(new_solution)
@@ -118,9 +131,8 @@ def AVND_algorithm(
 
                 # if NS in better than CS (1):
                 elif new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist: 
-                    print("NS is better than CS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-                    print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} > new_sol_OBJ : {new_solution.OBJ_tot_dist}")
-
+                    # print("NS is better than CS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+                    # print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} > new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
                     # udate current solution
                     current_solution = copy.deepcopy(new_solution)
@@ -135,9 +147,9 @@ def AVND_algorithm(
                     total_run += 1
 
                 elif ws_counter == ws_counter_limit:
-                    OBJ_limit_value = (current_solution.OBJ_tot_dist + worse_sol_percentage * current_solution.OBJ_tot_dist)
-                    print("NS is accepted --------------------------------------------------------------------------------")
-                    print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
+                    OBJ_limit_value = (current_solution.OBJ_tot_dist * (1 + worse_sol_percentage))
+                    # print("NS is accepted --------------------------------------------------------------------------------")
+                    # print(f"curr_sol_OBJ: {current_solution.OBJ_tot_dist} < new_sol_OBJ : {new_solution.OBJ_tot_dist}")
 
                     # if NS is accepted (2):
                     if new_solution.OBJ_tot_dist < OBJ_limit_value:   
@@ -152,7 +164,7 @@ def AVND_algorithm(
                         total_run += 1
                 
                 else:
-                    print("NS is discarted")
+                    # print("NS is discarted")
                     # update parameters
                     reward_points += rewards_values[3]
                     iteration += 1
@@ -163,7 +175,8 @@ def AVND_algorithm(
                 # if not new_solution.feasibility_vector.constr_1:
                 #     raise ValueError("❌ Primo vincolo di fattibilità violato: arresto calcolo. ---------------------------------------------------")
 
-                print(f"NS is not feasible")
+                # print(f"NS is not feasible")
+
                 # new_solution.feasibility_vector.print()
                 # print("ROUTES MATRIX:", new_solution.assigned_ordered_matrix)
                 # print(f"initial_combos \ncomb_1: c{initial_comb.comb_1.client} v{initial_comb.comb_1.vehicle}, d{initial_comb.comb_1.day} \ncomb_2: c{initial_comb.comb_2.client} v{initial_comb.comb_2.vehicle}, d{initial_comb.comb_2.day}")
@@ -196,10 +209,13 @@ def AVND_algorithm(
         ))
 
         ''' save otuput data '''
-        neigh_out_parameters[neighbour, 0] += iteration
-        neigh_out_parameters[neighbour, 1] = new_sol_per_neigh[neighbour]
-        neigh_out_parameters[neighbour, 2] = best_sol_per_neigh[neighbour]
-        neigh_out_parameters[neighbour, 3] += elapsed_time
+        neigh_out_parameters[0, neighbour] += iteration
+        neigh_out_parameters[1, neighbour] = new_sol_per_neigh[neighbour]
+        neigh_out_parameters[2, neighbour] = best_sol_per_neigh[neighbour]
+        neigh_out_parameters[3, neighbour] += elapsed_time
+        neigh_out_parameters[4, neighbour] = neigh_out_parameters[3, neighbour]/neigh_out_parameters[0, neighbour]
+        neigh_out_parameters[5, neighbour] = neigh_out_parameters[1, neighbour]/neigh_out_parameters[0, neighbour]
+        neigh_out_parameters[6, neighbour] = neigh_out_parameters[2, neighbour]/neigh_out_parameters[0, neighbour]
 
 
         ''' update probabilities '''

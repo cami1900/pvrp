@@ -14,6 +14,7 @@ import algorithms.VND
 import algorithms.VND_new
 import algorithms.assign_route
 import algorithms.feasibility_function_POOP
+import algorithms.similarity_measures
 import utils
 
 
@@ -47,7 +48,7 @@ def main():
 
     # VND parameters
     repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-    time_limit_VND = 120   # 2h*60min*60sec = 7200sec
+    time_limit_VND = 30   # 2h*60min*60sec = 7200sec
     time_limit_neigh = 7200  # not used
 
     # neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "t_multiswap_k"]
@@ -107,17 +108,18 @@ def main():
         return f"Instance p02 - Soluzione iniziale non fattibile.\n"
     print("Check feasibility completed.")
 
+    sim_1_initial= algorithms.similarity_measures.def_sim_1_matrix(n_vehicles, n_days, solution_0)
    
    
     '''VND ALGORITHM'''
     
+    # all_best_solutions_VND = np.zeros((len(worse_sol_acc_VND)+1), dtype=float)
+    # all_best_solutions_VND[0] = solution_0.OBJ_tot_dist
     current_solution = copy.deepcopy(solution_0)
-    all_best_solutions_VND = np.zeros((len(worse_sol_acc_VND)+1), dtype=float)
-    all_best_solutions_VND[0] = solution_0.OBJ_tot_dist
     best_solution = copy.deepcopy(solution_0)
-    best_solution_OBJ = solution_0.OBJ_tot_dist
-    all_solutions_VND = []
-    all_solutions_VND.append(float(current_solution.OBJ_tot_dist))
+    # best_solution_OBJ = solution_0.OBJ_tot_dist
+    # all_solutions_VND = []
+    # all_solutions_VND.append(float(current_solution.OBJ_tot_dist))
     number_new_sol = 0
     tot_iteration_VND = 0
 
@@ -130,7 +132,7 @@ def main():
     print("  Starting algorithm...   ")
     print("**************************")
 
-    (best_solution, solution_history, neigh_out_parameters) = algorithms.VND_new.AVND_algorithm(
+    (base_solution, solution_history, neigh_out_parameters) = algorithms.VND_new.AVND_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
         current_solution, best_solution, 
         time_limit_VND, 
@@ -142,18 +144,64 @@ def main():
     print("   algorithm finished.    ")
     print("**************************")
 
+    ''' NEW PROBLEM '''
+    
+    time_limit_VND = 60   # 2h*60min*60sec = 7200sec
+    start_time_VND = time.process_time()
+
+    print("**************************")
+    print("  Starting algorithm...   ")
+    print("**************************")
+
+    (new_solution, solution_history, neigh_out_parameters) = algorithms.VND_new.AVND_algorithm(
+        n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
+        current_solution, best_solution, 
+        time_limit_VND, 
+        neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
+        worse_sol_percentage, 
+        initial_score, rewards_values)
+
+    print("**************************")
+    print("   algorithm finished.    ")
+    print("**************************")
+
+
+    ''' SIMILARITY '''
+
+    # first similarity measure
+    sim_1_base = algorithms.similarity_measures.def_sim_1_matrix(n_vehicles, n_days, base_solution)
+    sim_1_new = algorithms.similarity_measures.def_sim_1_matrix(n_vehicles, n_days, new_solution)
+    (sim_1_value, sim_1_vehicle_pairings) = algorithms.similarity_measures.measure_sim_1(n_vehicles, sim_1_base, sim_1_new)
+
+    # second similarity measure
+    sim_2_base = algorithms.similarity_measures.def_sim_2_matrix(n_vehicles, n_days, base_solution)
+    sim_2_new = algorithms.similarity_measures.def_sim_2_matrix(n_vehicles, n_days, new_solution)
+    (sim_2_value, sim_2_vehicle_pairings) = algorithms.similarity_measures.measure_sim_2(n_vehicles, n_days, sim_2_base, sim_2_new)
+
+    # third similarity measure
+    sim_3_base = algorithms.similarity_measures.def_sim_3_matrix(n_vehicles, n_days, base_solution)
+    sim_3_new = algorithms.similarity_measures.def_sim_3_matrix(n_vehicles, n_days, new_solution)
+    (sim_3_value, sim_3_vehicle_pairings) = algorithms.similarity_measures.measure_sim_3(n_vehicles, n_days, sim_3_base, sim_3_new)
+
+
     ''' RESULTS '''
 
-    total_time_VND = time.process_time() - start_time_VND
-    print("total_time", total_time_VND)
+    # total_time_VND = time.process_time() - start_time_VND
+    # print("total_time", total_time_VND)
 
     # print("all_best_solutions_VND", all_best_solutions_VND)
-    print("initial solution OBJ", solution_0.OBJ_tot_dist)
-    print("best solution OBJ", best_solution.OBJ_tot_dist)
-    print(f"neigh_out_parameters: \n{neigh_out_parameters}\n\n")
-    # print("best solution")
-    # best_solution.print()
+    # print("initial solution OBJ", solution_0.OBJ_tot_dist)
+    # print("best solution OBJ", best_solution.OBJ_tot_dist)
+    # print(f"neigh_out_parameters: \n{neigh_out_parameters}\n\n")
+    base_solution.print()
     print("\n\n")
+    new_solution.print()
+    print("\n\n")
+    print(f"sim_1: {sim_1_value}, pairings: {sim_1_vehicle_pairings}")
+    print(f"sim_2: {sim_2_value}, pairings: {sim_2_vehicle_pairings}")
+    print(f"sim_3: {sim_3_value}, pairings: {sim_3_vehicle_pairings}")
+
+
 
     # ''' SAVE SOLUTION '''
     # save_solution(best_solution, file_path_out)
