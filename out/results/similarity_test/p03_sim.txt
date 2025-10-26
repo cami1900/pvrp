@@ -1,0 +1,31 @@
+3
+
+Similarity 1
+1.0
+
+Similarity combination matrix:
+1.0
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0))
+1.0
+
+Similarity 2
+0.0951048951048951
+
+Similarity combination matrix:
+0.0951048951048951
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0))
+0.0951048951048951
+
+Similarity 3
+0.10333333333333332
+
+Similarity combination matrix:
+0.10333333333333332
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0))
+0.10333333333333332

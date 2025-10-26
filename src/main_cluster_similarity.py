@@ -4,8 +4,9 @@ import copy
 import random
 import random2
 import time
+import traceback
 
-
+import conf
 import algorithms
 import algorithms.VND
 import algorithms.VND_new
@@ -31,13 +32,13 @@ MAX_WORKERS = 8     # Maximum number of cores to use (change as desired)
 # Directory
 input_dir_base = "data"
 input_dir_new  = "data_new"     # To create a new dataset, create a folder and rename path
-output_dir = "out/results/Similarity"       # Create new folder to avoid overwriting results and rename path
+output_dir = "out/results/similarity_test"       # Create new folder to avoid overwriting results and rename path
 
 distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-time_limit_VND = 30   # 2h*60min*60sec = 7200sec
+time_limit_VND = 120   # 2h*60min*60sec = 7200sec
 max_iteration_neigh = 200
 worse_sol_percentage = 0.15
 
@@ -45,35 +46,49 @@ worse_sol_percentage = 0.15
 neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt"]
 
 # A-VND parameters ---------------------------------- 
-ws_counter_limit = 200
+ws_counter_limit = 100
 initial_score = 3
 rewards_values = [8, 4, 2, 1] 
 
 # Demand fluctuation parameters
-total_mode = 0,                 # 0 = totale costante, 1 = può variare entro capacità
-fluct_mode = "compensated",     # "compensated", "mixed", "uniform"
-client_affected_pct = 1,        # % di clienti influenzati (0-1)
-variance_pct = 0.3,             # ampiezza fluttuazione (%(0-1) rispetto alla domanda)
-distr_type = "poisson",         # "gamma" o "poisson"
-margin_pct = 0.1,               # % di margine (0-1)
-
-# seed
-seed = 42 
-random.seed(seed)
-np.random.seed(seed)
-random2.seed(seed)
+total_mode = 0                 # 0 = totale costante, 1 = può variare entro capacità
+fluct_mode = "compensated"     # "compensated", "mixed", "uniform"
+client_affected_pct = 1        # % di clienti influenzati (0-1)
+variance_pct = 0.5             # ampiezza fluttuazione (%(0-1) rispetto alla domanda)
+distr_type = "poisson"         # "gamma" o "poisson"
+margin_pct = 0.1               # % di margine (0-1)
 
 ''' ----------------------------------------------------------------------------------------------------------------'''
 
 
-def solution_solver(output_path, instance_number, data, path_img, path_graph,
+def solution_solver(output_path, instance_number, data, sorted_data, path_img, path_graph,
                     n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
-                    sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix):
+                    distance_matrix, distance_matrix_adjusted, closeness_matrix):
 
     '''INITIAL SOLUTION'''
     solution_0 = algorithms.assign_route.assign_to_1_vehicle_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix)
+    # print(f"solution_0 trovata--> not_assigned_list = {solution_0.not_assigned_list} \nverifico feasibility:")
     
+    # if there are not_assigned clients, try to assign
+    if np.any(solution_0.not_assigned_list != 0):
+        (solution_0, error_index) = algorithms.assign_route.assign_not_assigned(
+            n_vehicles, n_days, distance_matrix, closeness_matrix, vehicle_capacity,
+              data, solution_0)
+        # if a client canNOT be assigned: save data and break the instance
+        if not error_index:  
+            print(f"Warning: Not all customers can be assigned to the instance {instance_number}!")
+            # save data
+            solution_txt = utils.save_solution_pvrp_in_txt(
+                instance_number, n_vehicles, n_clients, n_days, vehicle_capacity,
+                solution_0, solution_0,  # ottimised_solution = solution_0 perché non c'è ottimizzazione
+                [], [],  # solution_history e neigh_out_parameters vuoti
+                neigh_order, 0, 0)  # max_iteration_neigh e time_limit_VND settati a 0
+            with open(output_path, 'w') as f:
+                f.write(solution_txt)
+            # exit the function immediately without continuing with VND
+        return f"Instance p{instance_number} - error: not all customers assignable.\n"
+        
     # check fesibility
     V_distances_matrix, V_loads_matrix, solution_0 = algorithms.feasibility_function_POOP.check_feasibility_1vehicle(
         n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, 
@@ -156,19 +171,25 @@ def similarity_solver(output_path, instance_number, n_vehicles, n_days, base_sol
 
 def instance_solver(filename):
 
+    # seed
+    seed = 42 
+    random.seed(seed)
+    np.random.seed(seed)
+    random2.seed(seed)
+
     ''' INSTANCE '''
     instance_number = int(filename[1:])  # 'p01' -> 1
 
     ''' PATHS '''
     path_data_base = os.path.join(input_dir_base, filename + ".txt")
     path_results_base = os.path.join(output_dir, filename + "_base" + ".txt")
-    path_img_base = os.path.join(output_dir, filename + "_img_base" + ".txt")
-    path_graph_base = os.path.join(output_dir, filename + "_graph_base" + ".txt")
+    path_img_base = os.path.join(output_dir, filename + "_img_base" + ".jpg")
+    path_graph_base = os.path.join(output_dir, filename + "_graph_base" + ".jpg")
 
     path_data_new  = os.path.join(input_dir_new,  filename + ".txt")
     path_results_new = os.path.join(output_dir, filename + "_new" + ".txt")
-    path_img_new = os.path.join(output_dir, filename + "_img_base" + ".txt")
-    path_graph_new = os.path.join(output_dir, filename + "_graph_base" + ".txt")
+    path_img_new = os.path.join(output_dir, filename + "_img_new" + ".jpg")
+    path_graph_new = os.path.join(output_dir, filename + "_graph_new" + ".jpg")
 
     path_results_similarity = os.path.join(output_dir, filename + "_sim" + ".txt")
 
@@ -181,9 +202,9 @@ def instance_solver(filename):
         utils.data_preparation(path_data_base, distance_type)
     
     # Solve instance
-    sol_base = solution_solver(path_results_base, instance_number, data, path_img_base, path_graph_base,
+    sol_base = solution_solver(path_results_base, instance_number, data, sorted_data, path_img_base, path_graph_base,
                     n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
-                    sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix)
+                    distance_matrix, distance_matrix_adjusted, closeness_matrix)
 
 
     ''' INSTANCE NEW '''
@@ -194,12 +215,20 @@ def instance_solver(filename):
         distance_type,
         total_mode, fluct_mode, client_affected_pct, variance_pct, distr_type, margin_pct,
         )
-    
-    # Solve instance new
-    sol_new  = solution_solver(path_results_new, instance_number, data_new, path_img_new, path_graph_new,
-                    n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
-                    sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix)
+    # print("data_new", data_new.shape[0])
+    # data_new[n_clients-1, conf.DEMAND_INDEX] = 161
+    # print("client 51", data_new[n_clients-1])
+    sorted_data_new = utils.sort_data(data_new)
 
+    # Solve instance new
+    sol_new  = solution_solver(path_results_new, instance_number, data_new, sorted_data_new, path_img_new, path_graph_new,
+                    n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
+                    distance_matrix, distance_matrix_adjusted, closeness_matrix)
+
+    # Se la funzione ha restituito una stringa di errore, esci subito
+    if isinstance(sol_new, str):
+        print(sol_new.strip())
+        return  # <-- fermati, non calcolare la similarità
 
     ''' SIMILARITY '''
     # Solve similarity
@@ -213,7 +242,7 @@ def instance_solver(filename):
 def main():
 
     os.makedirs(output_dir, exist_ok=True)
-    instance_files = [f"p{str(i).zfill(2)}" for i in range(1, 33)]
+    instance_files = [f"p{str(i).zfill(2)}" for i in range(1, 32)]
 
     print(f"Avvio elaborazione parallela con {MAX_WORKERS} worker...\n")
 
@@ -227,6 +256,7 @@ def main():
                 print(f"{instance} completata.")
             except Exception as e:
                 print(f"Errore in {instance}: {e}")
+                traceback.print_exc()
 
     print("\nElaborazione completata.")
 

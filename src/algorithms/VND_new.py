@@ -47,6 +47,14 @@ def AVND_algorithm(
     for neigh in range(len(score_neigh)):
         score_neigh[neigh] = initial_score
         probability_neigh[neigh] = 1/(max_neighbour+1)
+    if n_vehicles == 1:
+        for neigh in range(len(score_neigh)):
+            if (neigh_order[neigh] == "t_move_k" or
+                neigh_order[neigh] == "move_kt" or
+                neigh_order[neigh] == "t_swap_k" or
+                neigh_order[neigh] == "f_swap_kt" or
+                neigh_order[neigh] == "swap_kt" ):
+                score_neigh[neigh] = 0
     
     # time
     start_time_VND = time.process_time()
@@ -578,7 +586,7 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
 
     if combination_index == False:
         new_solution = 0
-        print("impossibile trovare new_combos per le linked_combos (capacity)")
+        # print("impossibile trovare new_combos per le linked_combos (capacity)")
         return (initial_comb_main, final_comb_main, new_solution, False)
 
     ' step 3.3 '
@@ -587,7 +595,7 @@ def define_neighboring_solution(neighbour, n_vehicles, n_days, vehicle_capacity,
 
     if schedule_index == False:
         new_solution = 0
-        print("le poss_combos per le linked_combos non rispettano la schedule (schedule)")
+        # print("le poss_combos per le linked_combos non rispettano la schedule (schedule)")
         return (initial_comb_main, final_comb_main, new_solution, False)
 
     # choose a random schedule
@@ -1361,7 +1369,7 @@ def find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, current
 
                 client_combos.append((vehicle, day))
 
-        print(f"client{client}, f{data[client, conf.FREQ_VISIT_INDEX]} --> combos: {client_combos}")
+        # print(f"client{client}, f{data[client, conf.FREQ_VISIT_INDEX]} --> combos: {client_combos}")
 
     return client_combos
 

@@ -163,6 +163,11 @@ def check_frequency(data, client_i, Ci_assign_matrix, solution):
     if float(actual_frequency) != required_frequency:
         solution.feasibility_vector.constr_1 = False
         print(f"Incorrect frequency for client {client_i}: expected {required_frequency}, found {actual_frequency}")
+        # if actual_frequency == 0:
+        #     print(solution.not_assigned_list)
+        #     idx = np.where(solution.not_assigned_list == 0)[0][0]  # Trova la posizione in cui compare il primo posto libero
+        #     solution.not_assigned_list[idx] = client_i    # inserisce il nuovo cliente
+        #     print("not_assigned_list has been updated:\n", solution.not_assigned_list)
 
     # else:
     #     if solution.fesibility_vector.constr_1 != False:
@@ -306,7 +311,7 @@ def check_capacity(n_vehicles, n_days, V_loads_matrix, vehicle_capacity, solutio
         for d in range(n_days):
             if V_loads_matrix[v, d] > vehicle_capacity:
                 solution.feasibility_vector.constr_3 = False
-                print(f"Total load of vehicle {v} in the day {d} is bigger than total capacity: {V_loads_matrix[v, d]} > {vehicle_capacity}")
+                # print(f"Total load of vehicle {v} in the day {d} is bigger than total capacity: {V_loads_matrix[v, d]} > {vehicle_capacity}")
 
     return solution
 

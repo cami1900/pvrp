@@ -5,6 +5,7 @@ import random
 import copy
 import conf
 import classes
+import algorithms.VND_new as VND_new
 from py2opt.routefinder import RouteFinder
 
 
@@ -61,7 +62,7 @@ def assign_to_1_vehicle_algorithm(n_vehicles, n_days, n_clients, max_clients_kd,
 
         if not np.any(S_fesibility_matrix >= min_freq_i):   # if min_freq_i is not satisfied
             # not_assigned_list.append(real_client_index)     # add client i to not_assigned_list
-            first_zero = np.where(not_assigned_list == 0)[0]
+            first_zero = np.where(not_assigned_list == 0)[0][0]
             not_assigned_list[first_zero] = real_client_index
             continue
             
@@ -98,6 +99,144 @@ def assign_to_1_vehicle_algorithm(n_vehicles, n_days, n_clients, max_clients_kd,
     # solution_0.print()
 
     return solution_0
+
+
+def assign_not_assigned(n_vehicles, n_days, distance_matrix, closeness_matrix, vehicle_capacity, data, solution):
+
+    pending_clients = [x for x in solution.not_assigned_list if x != 0]
+    not_removable_clients = []
+    error_index = True
+
+    while pending_clients:  # finché ci sono clienti da assegnare
+
+        client = int(pending_clients.pop(0))  # prendo il primo cliente e lo rimuovo dalla lista
+        not_removable_clients.append(client)    # una volta assegnato, non più rimovibile (rischio: loop)
+        demand_client = data[client, conf.DEMAND_INDEX]
+        n_visit_comb = int(data[client][conf.N_VISIT_INDEX])
+        possible_schedules = []
+        for schedule_idx in range(n_visit_comb):
+            schedule_val = int(data[client][conf.VISIT_START_INDEX + schedule_idx])
+            schedule_bin = np.array([int(b) for b in format(schedule_val, f'0{n_days}b')], dtype=int)
+            possible_schedules.append(schedule_bin)
+        possible_combos = []
+
+        # prova ad assegnarlo nei "buchi" (non rispetta la 1_vehicle contraint)
+        for schedule in possible_schedules:
+            available_days = np.zeros(n_days, int)
+            available_vehicles = np.zeros(n_days, int) # per ogni giorno trova un cliente
+            for day, visit in enumerate(schedule):
+                if visit == 1:
+                    # trova tutti i veicoli con abbastanza capacità
+                    possible_vehicles = np.where(vehicle_capacity - solution.transp_demand_matrix[:, day] >= demand_client)[0]
+        
+                    if len(possible_vehicles) > 0:
+                        # prendi un veicolo disponibile 
+                        vehicle = np.random.choice(possible_vehicles)
+                        available_days[day] = 1
+                        available_vehicles[day] = vehicle
+            
+            # sono state trovete le combos a cui assegnare il cliente!!!
+            if np.array_equal(available_days, schedule):
+                print("I due array sono uguali")
+                solution = assign_to_combos(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+                     solution, schedule, available_days, available_vehicles, client)
+                break  # esci dal for schedule, vai al prossimo cliente
+            
+            # non c'è abbastanza spazio: salva dati e prova con un'altra schedule
+            else:
+                print("I due array sono diversi")
+                possible_combos.append((available_days, available_vehicles))
+
+        # nessuna schedule era fattibile: bisogna crearsi lo spazio (spostiamo un altro cliente!)
+        max_days = 0
+        best_index = None
+        for i, (days, _) in enumerate(possible_combos):
+            n_days_ok = np.sum(days)
+            if n_days_ok > max_days:
+                max_days = n_days_ok
+                best_index = i
+        # selezioniamo le combos:
+        if best_index is not None:
+            best_days, best_vehicles = possible_combos[best_index]
+            selected_schedule = possible_schedules[best_index]
+        else:
+            random_index = np.random.randint(len(possible_combos))
+            best_days, best_vehicles = possible_combos[random_index]
+            selected_schedule = possible_schedules[random_index]
+        # per i giorni ancora non disponibili, selezioniamo cliente da rimuovere:
+        for day, visit in enumerate(selected_schedule):
+            if visit == 1 and best_days[day] == 0:
+                removable_clients = []
+                for vehicle in range(n_vehicles):
+                    clients_v = solution.assigned_ordered_matrix[vehicle, day]
+                    clients_v = clients_v[clients_v > 0]  # rimuovi zeri
+                    if len(clients_v) == 0:
+                        continue
+
+                    # frequenze e domande dei clienti assegnati
+                    demands_v = data[clients_v.astype(int), conf.DEMAND_INDEX]
+                    freqs_v = data[clients_v.astype(int), conf.FREQ_VISIT_INDEX]
+                    min_freq_v = np.min(freqs_v)    # trova la frequenza minima tra questi clienti
+
+                    # clienti con frequenza minima e domanda >= quella richiesta
+                    mask = (freqs_v == min_freq_v) & (demands_v >= demand_client) 
+                    eligible = clients_v[mask]
+                    eligible = eligible[~np.isin(eligible, not_removable_clients)] # elimina i clienti "intoccabili"
+
+                    if len(eligible) > 0:
+                        for c in eligible:  # aggiungi questi clienti ai candidati
+                            removable_clients.append((vehicle, int(c))) # salva veicolo e indice cliente
+
+                # se abbiamo candidati, scegline uno random
+                if len(removable_clients) > 0:
+                    # rimuovi cliente
+                    chosen_vehicle, chosen_client = random.choice(removable_clients)
+                    (solution.assigned_ordered_matrix, solution.transp_demand_matrix) = \
+                        VND_new.remove_client_NEW(
+                            data, solution.assigned_ordered_matrix, solution.transp_demand_matrix, 
+                            day, chosen_vehicle, chosen_client)
+                    # update combos:
+                    pending_clients.append(chosen_client)
+                    best_days[day] = 1
+                    best_vehicles[day] = chosen_vehicle
+                    print(f"🎯 Cliente scelto: {chosen_client} nel veicolo {chosen_vehicle} (giorno {day})")
+                else:
+                    print(f"❌ Cliente {client} non assegnabile: nessuna combinazione disponibile.")
+                    return (solution, False)
+
+        # ora che abbimao creato spazio, aggiorna:
+        solution = assign_to_combos(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+                solution, selected_schedule, best_days, best_vehicles, client)
+    
+    return (solution, error_index)     # fine, esci!
+
+
+
+
+def assign_to_combos(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+                     solution, selected_schedule, available_days, available_vehicles, client):
+
+    # per ciascuna combo(veicolo-gionro):
+    for day, visit in enumerate(selected_schedule):
+        if visit == 1:
+        # assegna cliente e aggiorna capacità
+            (solution.assigned_ordered_matrix, solution.transp_demand_matrix) = \
+                VND_new.add_client_NEW(
+                    data, solution.assigned_ordered_matrix, solution.transp_demand_matrix, 
+                    available_days[day], available_vehicles[day], client)
+        # ottimizza routes
+        (solution.route_dist_matrix, solution.assigned_ordered_matrix) = \
+            VND_new.optimize_single_route(
+                n_vehicles, n_days, distance_matrix, closeness_matrix, 
+                solution.route_dist_matrix, solution.assigned_ordered_matrix, 
+                available_days[day], available_vehicles[day])
+        # aggiona distanze
+        solution.OBJ_tot_dist = \
+            calculate_tot_dist(
+            n_vehicles, n_days, 
+            solution.route_dist_matrix, solution.OBJ_tot_dist)
+
+    return solution
 
 
 ''' STEPS FUNCTIONS '''

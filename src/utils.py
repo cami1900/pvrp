@@ -274,7 +274,7 @@ def log_matrix(matrix, file_path):
                 else:
                     int_part, dec_part = s, ''
                 formatted_row.append(fmt.format(int_part, dec_part))
-            print('  '.join(formatted_row), file=f)
+            # print('  '.join(formatted_row), file=f)
 
 
 
@@ -402,9 +402,9 @@ def create_new_dataset_OLD(
     df.iloc[start_row:, demand_col] = new_demands.astype(int)
     df.to_csv(output_file, sep=" ", header=False, index=False)
 
-    print(f"File salvato come '{output_file}'")
-    print(f"Domanda totale originale: {original_demands.sum():.0f}")
-    print(f"Domanda totale nuova: {new_demands.sum():.0f} (capacità max: {cap_tot})")
+    # print(f"File salvato come '{output_file}'")
+    # print(f"Domanda totale originale: {original_demands.sum():.0f}")
+    # print(f"Domanda totale nuova: {new_demands.sum():.0f} (capacità max: {cap_tot})")
 
     return df
 
@@ -418,9 +418,9 @@ def create_new_dataset(
         total_mode,       # 0 = totale costante, 1 = può variare entro capacità
         fluct_mode,  # "compensated", "mixed", "uniform"
         client_affected_pct,        # % di clienti influenzati (0-1)
-        variance_pct,        # ampiezza fluttuazione (% rispetto alla domanda)
+        variance_pct,        # ampiezza fluttuazione (% (0-1) rispetto alla domanda)
         distr_type,         # "gamma" o "poisson"
-        margin_pct,         # % di margine  
+        margin_pct,         # % di margine (0-1) 
 ):
 
     # --- 1️⃣ Lettura righe file e parametri generali ---
@@ -460,10 +460,10 @@ def create_new_dataset(
 
         if distr_type == "gamma":
             shape = 2.0
-            scale = (variance_pct / 100) * base / shape
+            scale = variance_pct * base / shape
             variation = np.random.gamma(shape, scale)
         elif distr_type == "poisson":
-            lam = (variance_pct / 100) * base
+            lam = variance_pct * base
             variation = np.random.poisson(lam)
         else:
             raise ValueError("distr_type deve essere 'gamma' o 'poisson'")
@@ -496,6 +496,18 @@ def create_new_dataset(
         # Rimetti a zero eventuali negativi
         new_demands[new_demands < 0] = 0
 
+    # Attualmente, la compensazione ridistribuisce la differenza intera con ±1 unità
+    # Questa logica tende ad annullare la variazione se diff è piccolo
+    # Puoi sostituirla con una compensazione proporzionale più “soft”:
+    # if total_mode == 0:
+    #     diff = new_demands.sum() - original_total
+    #     if diff != 0:
+    #         # Distribuisci la differenza proporzionalmente ai valori dei clienti
+    #         ratio = diff / new_demands.sum()
+    #         adj = (new_demands[1:] * ratio).astype(int)
+    #         new_demands[1:] -= adj
+    #     new_demands[new_demands < 0] = 0
+
     # --- 6️⃣ Se total_mode = 1, controlla la capacità ---
     elif total_mode == 1:
         if new_demands.sum() > cap_tot:
@@ -505,20 +517,39 @@ def create_new_dataset(
     # --- 7️⃣ Sostituisci i valori aggiornati nel dataset ---
     new_data[:, conf.DEMAND_INDEX] = new_demands
 
-    # --- 8️⃣ Scrivi il nuovo file completo ---
+    # # --- 8️⃣ Scrivi il nuovo file completo ---
+    # with open(output_file, "w") as f:
+    #     # Righe iniziali (parametri)
+    #     for line in lines[:first_data_index]:
+    #         f.write(line)
+    #     # Righe clienti (comprese depot)
+    #     for row in new_data:
+    #         row_clean = [str(int(x)) for x in row if not np.isnan(x)]
+    #         f.write(" ".join(row_clean) + "\n")
+
+    # --- 8️⃣ Scrivi il nuovo file completo mantenendo il formato originale ---
+    updated_lines = lines.copy()
+
+    # Aggiorna solo i valori di domanda nelle righe dei clienti
+    for i, row_idx in enumerate(range(first_data_index + 1, len(lines))):
+        parts = lines[row_idx].split()
+        if len(parts) > conf.DEMAND_INDEX:
+            # aggiorna solo la colonna della domanda
+            parts[conf.DEMAND_INDEX + 1] = str(int(new_demands[i])) # +1 perchè in data era stata tolta una colonna e bisogna tenerne di nuovo conto
+            updated_lines[row_idx] = " ".join(parts) + "\n"
+
+    # Salva tutto nel nuovo file (stesso formato)
     with open(output_file, "w") as f:
-        # Righe iniziali (parametri)
-        for line in lines[:first_data_index]:
-            f.write(line)
-        # Righe clienti (comprese depot)
-        for row in new_data:
-            row_clean = [str(int(x)) for x in row if not np.isnan(x)]
-            f.write(" ".join(row_clean) + "\n")
+        f.writelines(updated_lines)
+
 
     # --- 9️⃣ Report finale ---
-    print(f"✅ File salvato: {output_file}")
-    print(f"Domanda totale originale: {original_total}")
-    print(f"Domanda totale nuova: {int(new_demands.sum())} (capacità max: {int(cap_tot)})")
+    # print(f"✅ File salvato: {output_file}")
+    # print(f"Domanda totale originale: {original_total}")
+    # print(f"Domanda totale nuova: {int(new_demands.sum())} (capacità max: {int(cap_tot)})")
+
+    # print("data", data)
+    # print("new_data", new_data)
 
     return new_data
 
@@ -637,9 +668,9 @@ def create_new_dataset_CHAT(
             f.write(" ".join(row_clean) + "\n")
 
     # --- 9️⃣ Report ---
-    print(f"✅ File salvato: {output_file}")
-    print(f"Domanda totale originale: {original_total}")
-    print(f"Domanda totale nuova: {int(new_demands.sum())} (capacità max: {int(cap_tot)})")
+    # print(f"✅ File salvato: {output_file}")
+    # print(f"Domanda totale originale: {original_total}")
+    # print(f"Domanda totale nuova: {int(new_demands.sum())} (capacità max: {int(cap_tot)})")
 
     return new_data
 
@@ -1484,11 +1515,10 @@ def plot_save_VND_graph(solution_history, graphname_outdir):
     plt.plot(iter_total, obj_values, marker='o', label='Objective Value')
 
     # Add vertical lines to mark the end of each repetition
-    # for idx in repetition_index:
-    #     plt.axvline(x=iter_total[idx], color='r', linestyle='--', alpha=0.5)
-    for rep in iter_total[:-1]:
-        plt.axvline(x=rep, color='r', linestyle='--', alpha=0.5)
-
+    # for rep in iter_total[:-1]:
+    #     plt.axvline(x=rep, color='r', linestyle='--', alpha=0.5)
+    #       --> è stato tolto perché ogni linea corrisponde esattamente ad ogni punto tracciato (punto a fine neigh.)
+    #       --> ha senso solo se si hanno più punti (es: ogni volta che si trova una nuova sol.)
 
     plt.xlabel('Total Iterations')
     plt.ylabel('Objective Value')

@@ -54,12 +54,12 @@ def measure_sim_2(n_vehicles, n_days, sim_2_base, sim_2_new):
             for day in range(n_days):
                 cl_sequences_vd_base = sim_2_base[vehicle_base, day]
                 cl_sequences_vd_new = sim_2_new[vehicle_new, day]
-                print("cl_sequences_vd_base", cl_sequences_vd_base)
-                print("cl_sequences_vd_new", cl_sequences_vd_new)
+                # print("cl_sequences_vd_base", cl_sequences_vd_base)
+                # print("cl_sequences_vd_new", cl_sequences_vd_new)
                 cl_sequences_vd_base = clean_np_ints(cl_sequences_vd_base)
                 cl_sequences_vd_new  = clean_np_ints(cl_sequences_vd_new)
-                print("cl_sequences_vd_base", cl_sequences_vd_base)
-                print("cl_sequences_vd_new", cl_sequences_vd_new)
+                # print("cl_sequences_vd_base", cl_sequences_vd_base)
+                # print("cl_sequences_vd_new", cl_sequences_vd_new)
                 
                 # max_len_in_vd_base = len(cl_sequences_vd_base[-1][0]) # last cl_sequest == longest 
                 # max_len_in_vd_new = len(cl_sequences_vd_new[-1][0]) # last cl_sequest == longest 
