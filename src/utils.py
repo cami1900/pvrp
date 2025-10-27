@@ -223,7 +223,7 @@ def data_preparation(file_path, distance_type):
     # customer data
     data = extract_client_data(lines, n_days)
     sorted_data = sort_data(data)
-    log_matrix(sorted_data, file_path="out\sorted_data.txt")
+    log_matrix(sorted_data, file_path=os.path.join("out", "sorted_data.txt"))
     n_clients = len(data)
     max_clients_kd = calculate_kd_clients(data, vehicle_capacity)
     # print(f"Number of clients: {n_clients-1} \nMaximum number of clients in one route:{max_clients_kd}")
@@ -231,15 +231,15 @@ def data_preparation(file_path, distance_type):
     # distance matrix
     if distance_type == 1:
         distance_matrix = euclidean_distance_calculator(data)
-        log_matrix(distance_matrix, file_path="out\euclidean_distance_matrix.txt")
+        log_matrix(sorted_data, file_path=os.path.join("out", "euclidean_distance_matrix.txt"))
     if distance_type == 2:
         distance_matrix = manhattan_distance_calculator(data) 
-        log_matrix(distance_matrix, file_path="out\manhattan_distance_matrix.txt")
+        log_matrix(sorted_data, file_path=os.path.join("out", "manhattan_distance_matrix.txt"))
     distance_matrix_adjusted = distance_matrix_adjuste_calculator(distance_matrix)
 
     # closeness matrix
     closeness_matrix = closeness_matrix_calculator(data, distance_matrix)
-    log_matrix(closeness_matrix, file_path="out\closeness_matrix.txt")
+    log_matrix(sorted_data, file_path=os.path.join("out", "closeness_matrix.txt"))
 
 
     return (n_vehicles, n_days, vehicle_capacity, data, sorted_data, n_clients, max_clients_kd, first_data_index, distance_matrix, distance_matrix_adjusted, closeness_matrix)
