@@ -38,7 +38,7 @@ distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-time_limit_VND = 120   # 2h*60min*60sec = 7200sec
+time_limit_VND = 10   # 2h*60min*60sec = 7200sec
 max_iteration_neigh = 200
 worse_sol_percentage = 0.15
 
