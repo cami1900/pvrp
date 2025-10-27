@@ -1,0 +1,16 @@
+LICENSE.md
+MANIFEST.in
+README.md
+setup.py
+py2opt/__init__.py
+py2opt/constants.py
+py2opt/routefinder.py
+py2opt/solver.py
+py2opt/utils.py
+py2opt.egg-info/PKG-INFO
+py2opt.egg-info/SOURCES.txt
+py2opt.egg-info/dependency_links.txt
+py2opt.egg-info/entry_points.txt
+py2opt.egg-info/requires.txt
+py2opt.egg-info/top_level.txt
+test/test_routefinder.py
