@@ -3,7 +3,6 @@ import time
 
 from py2opt.solver import Solver
 
-
 class RouteFinder:
     def __init__(self, distance_matrix, cities_names, iterations=5, writer_flag=False, method='py2opt', return_to_begin=False, verbose=True):
         self.distance_matrix = distance_matrix
