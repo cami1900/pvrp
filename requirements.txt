@@ -36,7 +36,6 @@ pyparsing==3.2.3
 pytest==8.4.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
-pywin32==306
 pyzmq==25.1.1
 random2==1.0.1
 scipy==1.15.3
