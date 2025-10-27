@@ -1,4 +1,4 @@
-from py2opt.routefinder import RouteFinder
+# from py2opt.routefinder import RouteFinder
 from py2opt142.py2opt.routefinder import RouteFinder
 
 import algorithms.assign_route
