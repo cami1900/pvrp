@@ -11,21 +11,21 @@ Similarity combination pairings:
 1.0
 
 Similarity 2
-0.041313131313131315
+0.0
 
 Similarity combination matrix:
-0.041313131313131315
+0.0
 
 Similarity combination pairings:
 (np.int64(0), np.int64(0))
-0.041313131313131315
+0.0
 
 Similarity 3
-0.04611111111111111
+0.0
 
 Similarity combination matrix:
-0.04611111111111111
+0.0
 
 Similarity combination pairings:
 (np.int64(0), np.int64(0))
-0.04611111111111111
+0.0
