@@ -38,7 +38,7 @@ distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-time_limit_VND = (3*60*60)   # 2h*60min*60sec = 7200sec
+time_limit_VND = 10 #(3*60*60)   # 2h*60min*60sec = 7200sec
 max_iteration_neigh = 200
 worse_sol_percentage = 0.15
 
@@ -96,6 +96,7 @@ def solution_solver(output_path, instance_number, data, sorted_data, path_img, p
     if np.any(solution_0.feasibility_vector) != 1 or np.any(solution_0.verification_vector) != 1:
         return f"Instance p{instance_number} - unable to determine a feasible initial solution.\n"
 
+    print(f"p{instance_number}: initial solution done")
 
     '''VND ALGORITHM'''
 
@@ -119,7 +120,8 @@ def solution_solver(output_path, instance_number, data, sorted_data, path_img, p
         time_limit_VND, 
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
-        initial_score, rewards_values)
+        initial_score, rewards_values,
+        instance_number)
 
     # total_time = time.process_time() - start_time
 
@@ -200,12 +202,13 @@ def instance_solver(filename):
       data, sorted_data, n_clients, max_clients_kd, first_data_index,
         distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
         utils.data_preparation(path_data_base, distance_type)
+    print(f"{filename}: data prepared")
     
     # Solve instance
     sol_base = solution_solver(path_results_base, instance_number, data, sorted_data, path_img_base, path_graph_base,
                     n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
                     distance_matrix, distance_matrix_adjusted, closeness_matrix)
-
+    print(f"{filename}: base solution found")
 
     ''' INSTANCE NEW '''
     # Create new instances (demand fluctuation)
@@ -219,11 +222,13 @@ def instance_solver(filename):
     # data_new[n_clients-1, conf.DEMAND_INDEX] = 161
     # print("client 51", data_new[n_clients-1])
     sorted_data_new = utils.sort_data(data_new)
+    print(f"{filename}: new data prepared")
 
     # Solve instance new
     sol_new  = solution_solver(path_results_new, instance_number, data_new, sorted_data_new, path_img_new, path_graph_new,
                     n_vehicles, n_clients, n_days, vehicle_capacity, max_clients_kd,
                     distance_matrix, distance_matrix_adjusted, closeness_matrix)
+    print(f"{filename}: new solution found")
 
     # Se la funzione ha restituito una stringa di errore, esci subito
     if isinstance(sol_new, str):
@@ -233,7 +238,7 @@ def instance_solver(filename):
     ''' SIMILARITY '''
     # Solve similarity
     similarity_solver(path_results_similarity, instance_number, n_vehicles, n_days, sol_base, sol_new)
-
+    print(f"{filename}: similarity measures calculated")
 
     return filename
 
@@ -241,6 +246,30 @@ def instance_solver(filename):
 
 def main():
 
+    # --- Print current configuration ---
+    print("\n==================== CURRENT CONFIGURATION ====================")
+    print(f"MAX_WORKERS: {MAX_WORKERS}")
+    print(f"Input directory (base): {input_dir_base}")
+    print(f"Input directory (new): {input_dir_new}")
+    print(f"Output directory: {output_dir}")
+    print(f"Distance type: {'Euclidean' if distance_type == 1 else 'Manhattan'}")
+    print(f"VND repetitions (accept worse, reject worse): {repetitions_VND}")
+    print(f"VND time limit: {time_limit_VND} sec")
+    print(f"Max neighborhood iterations: {max_iteration_neigh}")
+    print(f"Worse solution acceptance percentage: {worse_sol_percentage}")
+    print(f"Neighborhood order: {neigh_order}")
+    print(f"A-VND parameters -> ws_counter_limit={ws_counter_limit}, initial_score={initial_score}, rewards_values={rewards_values}")
+    print(f"Demand fluctuation: mode={fluct_mode}, distribution type={distr_type}")
+    print(f"Affected clients: {client_affected_pct*100:.0f}%, Variance: {variance_pct*100:.0f}%, Margin: {margin_pct*100:.0f}%")
+    print("=================================================================\n")
+
+    # --- User confirmation ---
+    proceed = input("⚙️  Do you want to continue with the execution? (yes/no): ").strip().lower()
+    if proceed not in ['y', 'yes']:
+        print("⛔ Execution aborted by user.")
+        sys.exit(0)
+
+    # --- Execution ---
     os.makedirs(output_dir, exist_ok=True)
     instance_files = [f"p{str(i).zfill(2)}" for i in range(1, 32)]
 

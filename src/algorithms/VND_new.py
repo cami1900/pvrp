@@ -22,7 +22,8 @@ def AVND_algorithm(
         time_limit_VND, 
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
-        initial_score, rewards_values):
+        initial_score, rewards_values,
+        instance_number):
     
     ''' STEP 0: prepare parameters -------------------------------------------------------------------------------------------------------------------------------'''
     
@@ -238,7 +239,9 @@ def AVND_algorithm(
             # print("")
             probability_neigh[neigh] = score_neigh[neigh] / total_scores
             # time.sleep(1)
-                        
+
+        ''' print message '''
+        print(f"p{instance_number}: best OBJ = {best_solution.OBJ_tot_dist}")    
 
     return (best_solution, solution_history, neigh_out_parameters)
 
