@@ -27,7 +27,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' SETTINGS -------------------------------------------------------------------------------------------------------'''
 
-MAX_WORKERS = 8     # Maximum number of cores to use (change as desired)
+MAX_WORKERS = 4     # Maximum number of cores to use (change as desired)
 
 # Directory
 input_dir_base = "data"
@@ -38,7 +38,7 @@ distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-time_limit_VND = 10 #(3*60*60)   # 2h*60min*60sec = 7200sec
+time_limit_VND = (2*60*60)   # 2h*60min*60sec = 7200sec
 max_iteration_neigh = 200
 worse_sol_percentage = 0.15
 
@@ -271,7 +271,7 @@ def main():
 
     # --- Execution ---
     os.makedirs(output_dir, exist_ok=True)
-    instance_files = [f"p{str(i).zfill(2)}" for i in range(1, 32)]
+    instance_files = [f"p{str(i).zfill(2)}" for i in range(1, 8+1)]
 
     print(f"Avvio elaborazione parallela con {MAX_WORKERS} worker...\n")
 
