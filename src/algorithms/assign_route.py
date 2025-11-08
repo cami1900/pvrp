@@ -91,8 +91,14 @@ def assign_to_1_vehicle_algorithm(n_vehicles, n_days, n_clients, max_clients_kd,
     (assigned_ordered_matrix) = add_depot(n_vehicles, n_days, assigned_ordered_matrix)
     # 2-opt:
     ''' hai sostituito la distance_matrix con la distance_matrix_adjusted'''
-    (assigned_ordered_matrix, route_dist_matrix) = two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, route_dist_matrix, assigned_ordered_matrix)
+    # (assigned_ordered_matrix, route_dist_matrix) = two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted, route_dist_matrix, assigned_ordered_matrix)
     
+    for vehicle_k in range(n_vehicles):
+        for day_t in range(n_days):
+            route = copy.copy(assigned_ordered_matrix[vehicle_k, day_t])
+            route_distance = sum(distance_matrix[route[i], route[i + 1]] for i in range(len(route) - 1))
+            route_dist_matrix[vehicle_k, day_t] = route_distance
+
     # STEP 12: calculate the total distance traveled (OBJECTIVE FUNCTION)
     (OBJ_tot_dist) = calculate_tot_dist(n_vehicles, n_days, route_dist_matrix, OBJ_tot_dist)
 

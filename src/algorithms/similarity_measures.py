@@ -25,8 +25,13 @@ def measure_sim_1(n_vehicles, sim_1_base, sim_1_new):
         for vehicle_new in range(n_vehicles):
             # find common_clients for each combination v_base-v_new:
             sim_1_combinations_matrix[vehicle_base, vehicle_new] = len(np.intersect1d(sim_1_base[vehicle_base], sim_1_new[vehicle_new]))
+            print(f"\nv_base{vehicle_base}, v_new{vehicle_new}")
+            print("common clients:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
+
             # calculate sim_1_measure = common_clients / tot_clients_base
             sim_1_combinations_matrix[vehicle_base, vehicle_new] = (sim_1_combinations_matrix[vehicle_base, vehicle_new])/tot_clients_in_v_base
+            print("base clients:", tot_clients_in_v_base)
+            print("similarity value:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
     
     # find best combinations:
     # linear_sum_assignment minimizza di default → usiamo il negativo per massimizzare
@@ -150,9 +155,9 @@ def measure_sim_3(n_vehicles, n_days, sim_3_base, sim_3_new):
 
 ''' prepare data '''
 
-def def_sim_1_matrix(n_vehicles, n_days, solution):
+def def_sim_1_matrix(n_vehicles, n_days, assigned_clients):
 
-    assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
+    # assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
     sim_1_matrix = np.empty(n_vehicles, dtype=object)
     
     for vehicle in range(n_vehicles):
@@ -162,10 +167,16 @@ def def_sim_1_matrix(n_vehicles, n_days, solution):
             clients_in_vd = assigned_clients[vehicle, day]
             clients_in_vd = clients_in_vd[clients_in_vd != 0]
 
-            for client in range(len(clients_in_vd)):
-                if client in clients_in_v:
-                    continue
-                clients_in_v.append(client)
+            # Iteriamo sui valori reali, non sugli indici
+            for client in clients_in_vd:
+                if client not in clients_in_v:
+                    clients_in_v.append(client)
+                    
+
+            # for client in range(len(clients_in_vd)):
+            #     if client in clients_in_v:
+            #         continue
+            #     clients_in_v.append(client)
 
         sim_1_matrix [vehicle] = clients_in_v
 

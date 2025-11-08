@@ -1233,7 +1233,8 @@ def plot_save_vehi_routes(n_vehicles, n_days, data, assigned_ordered_matrix, img
     plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area
 
     # Salva automaticamente il grafico
-    plt.savefig(imgname_outdir, dpi=300, bbox_inches="tight")
+    if imgname_outdir != 0:
+        plt.savefig(imgname_outdir, dpi=300, bbox_inches="tight")
     plt.close()  # chiude la figura per evitare conflitti
 
     return

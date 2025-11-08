@@ -246,6 +246,13 @@ def AVND_algorithm(
     return (best_solution, solution_history, neigh_out_parameters)
 
 
+def AVND_multiOBJ_algorithm():
+
+
+
+    return
+
+
 # FUNCTIONS:
 
 def choose_neigh(probability_neigh, neigh_order):

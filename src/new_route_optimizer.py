@@ -8,10 +8,10 @@ from algorithms.assign_route import calculate_tot_dist
 import conf
 import classes
 import numpy as np
+import pandas as pd
 import copy
 import matplotlib.pyplot as plt
 
-from algorithms.route_optimizer import TSP
 import logging
 import random
 import random2
@@ -37,6 +37,12 @@ np.random.seed(42)
 
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
+
+
+
+# Inizializza la tabella globale (4 algoritmi x 4 posizioni)
+score_table_global = np.zeros((4, 4), dtype=int)
+algo_names = ["dist_2opt", "dist_3opt", "dist_2_3opt", "dist_3_2opt"]
 
 
 ''' FUNCTIONS '''
@@ -133,34 +139,93 @@ def optimize_route(n_vehicles, n_days, distance_matrix, solution):
     new_solution = copy.deepcopy(solution)
     for vehicle in range(n_vehicles):
         for day in range(n_days):
+            # print(f"\nv{vehicle}, d{day}")
             route = copy.deepcopy(new_solution.assigned_ordered_matrix[vehicle][day])
             idx = np.where(route == 0)[0][2]    # remove final zeros
             original_route = route[:idx]
             original_distance = route_distance(distance_matrix, original_route)
-
+            # print("original distance:", original_distance)
             # optmize
             best_2opt, dist_2opt = two_opt(original_route, original_distance, distance_matrix)
             best_3opt, dist_3opt = three_opt(original_route, original_distance, distance_matrix)
             # 2-opt + 3-opt
             best_2_3opt, dist_2_3opt = three_opt(best_2opt, dist_2opt, distance_matrix)
             best_3_2opt, dist_3_2opt = three_opt(best_3opt, dist_3opt, distance_matrix)
+            # print("dist_2opt", dist_2opt)
+            # print("dist_3opt", dist_3opt)
+            # print("dist_2_3opt", dist_2_3opt)
+            # print("dist_3_2opt", dist_3_2opt)
+            update_score_table(original_distance, dist_2opt, dist_3opt, dist_2_3opt, dist_3_2opt)
 
             if dist_2_3opt < original_distance or dist_3_2opt < original_distance:
                 if dist_2_3opt < dist_3_2opt:   # dist_2_3opt better
-                    print("dist_2_3opt")
-                    print(f"original: {original_route}, \noptimized: {best_2_3opt}")
-                    print(f"original: {original_distance}, optimized: {dist_2_3opt}")
+                    # print("dist_2_3opt")
+                    # print(f"original: {original_route}, \noptimized: {best_2_3opt}")
+                    # print(f"original: {original_distance}, optimized: {dist_2_3opt}")
                     for client in range(len(best_2_3opt)):
                         new_solution.assigned_ordered_matrix[vehicle][day][client] = best_2_3opt[client]
                     new_solution.route_dist_matrix[vehicle][day] = dist_2_3opt
-                    print(new_solution.route_dist_matrix[vehicle][day])
+                    # print(new_solution.route_dist_matrix[vehicle][day])
                 else:                           # dist_3_2opt better
-                    print("dist_3_2opt")
-                    for client in range(len(best_2_3opt)):
+                    # print("dist_3_2opt")
+                    for client in range(len(best_3_2opt)):
                         new_solution.assigned_ordered_matrix[vehicle][day][client] = best_3_2opt[client]
                     new_solution.route_dist_matrix[vehicle][day] = dist_3_2opt
 
     return new_solution
+
+def update_score_table_OLD(original_distance, d2, d3, d23, d32):
+    """
+    Aggiorna la tabella punteggi globale in base alle distanze fornite.
+    Assegna +1 in base alla posizione relativa (la più piccola = migliore).
+    """
+    global score_table_global
+
+    distances = np.array([d2, d3, d23, d32])
+    tol = 1e-6
+
+    # Se nessuno migliora, non aggiornare
+    improved = distances < original_distance - tol
+    if not np.any(improved):
+        return
+
+    # Ordina le distanze in modo crescente
+    sorted_vals = np.sort(distances)
+    ranks = np.argsort(distances)
+
+    # Calcola la "posizione" per ogni algoritmo
+    current_rank = 0
+    for pos in range(len(distances)):
+        if pos == 0 or abs(sorted_vals[pos] - sorted_vals[pos - 1]) > tol:
+            current_rank += 1
+
+        # assegna +1 agli algoritmi con questa distanza (entro tolleranza)
+        idx_same = np.where(abs(distances - sorted_vals[pos]) <= tol)[0]
+        for idx in idx_same:
+            score_table_global[idx, current_rank - 1] += 1
+
+def update_score_table(original_distance, d2, d3, d23, d32):
+    global score_table_global
+
+    distances = np.array([d2, d3, d23, d32])
+    tol = 1e-6
+
+    # Se nessuno migliora l'originale → non aggiornare
+    if np.all(distances >= original_distance - tol):
+        return
+
+    # Ordina le distanze (crescente)
+    sorted_unique_vals = np.unique(np.round(distances, 6))
+    current_rank = 0
+
+    for val in sorted_unique_vals:
+        # assegna rank solo se migliore dell'originale
+        if val < original_distance - tol:
+            current_rank += 1
+            idx_same = np.where(abs(distances - val) <= tol)[0]
+            for idx in idx_same:
+                score_table_global[idx, current_rank - 1] += 1
+
 
 ''' optimize day (VRP) '''
 class MaxIters:
@@ -184,7 +249,7 @@ def crete_new_sol_empty(n_vehicles, n_days, n_clients, max_clients_kd):
 
     return new_solution
 
-def solve_vrp_day_OLD(n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution):
+def solve_vrp_day(n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution):
 
     # new_solution = copy.deepcopy(solution)
     new_solution = crete_new_sol_empty(n_vehicles, n_days, n_clients, max_clients_kd)
@@ -269,16 +334,16 @@ def solve_vrp_day_OLD(n_vehicles, n_days, n_clients, vehicle_capacity, max_clien
             selected_route_demand = route_demand(data, selected_route)
             new_solution.transp_demand_matrix[vehicle][day] = selected_route_demand
             original_distance += solution.route_dist_matrix[vehicle][day]
-            print(f"\n\nv{vehicle}, d{day}")
-            print(f"nold route: {solution.assigned_ordered_matrix[vehicle][day]} \nnew route: {new_solution.assigned_ordered_matrix[vehicle][0]}")
-            print(f"old length: {solution.route_dist_matrix[vehicle][day]}, new length: {new_solution.route_dist_matrix[vehicle][0]}")
+            # print(f"\n\nv{vehicle}, d{day}")
+            # print(f"nold route: {solution.assigned_ordered_matrix[vehicle][day]} \nnew route: {new_solution.assigned_ordered_matrix[vehicle][0]}")
+            # print(f"old length: {solution.route_dist_matrix[vehicle][day]}, new length: {new_solution.route_dist_matrix[vehicle][0]}")
     
     new_solution.OBJ_tot_dist = calculate_tot_dist(n_vehicles, n_days, new_solution.route_dist_matrix, new_solution.OBJ_tot_dist)
-    print(f"\nold distance: {solution.OBJ_tot_dist}, new distance: {new_solution.OBJ_tot_dist}")
+    # print(f"\nold distance: {solution.OBJ_tot_dist}, new distance: {new_solution.OBJ_tot_dist}")
 
     return new_solution
 
-def solve_vrp_day(n_vehicles, n_days, n_clients, vehicle_capacity,
+def solve_vrp_day_WRONG(n_vehicles, n_days, n_clients, vehicle_capacity,
                   max_clients_kd, data, distance_matrix, solution):
     new_solution = copy.deepcopy(solution)
 
@@ -395,11 +460,16 @@ def solve_vrp_day(n_vehicles, n_days, n_clients, vehicle_capacity,
 
 def check_solution(data, n_vehicles, n_days, solution):
 
+    total_transported_demand = 0
+    total_clients_demand = 0
+
     n_info = 1+1+n_days+1 # id, freq, schedule (=n_days), schedule in decimal
     client_records = np.zeros((data.shape[0], n_info), dtype=int)
 
     for vehicle in range(n_vehicles):
         for day in range(n_days):
+            total_transported_demand += solution.transp_demand_matrix[vehicle, day]
+
             clients_vd = copy.deepcopy(solution.assigned_ordered_matrix[vehicle, day])
             idx = np.where(clients_vd == 0)[0][1]    # remove final zeros
             clients_vd = clients_vd[1:idx]
@@ -411,6 +481,8 @@ def check_solution(data, n_vehicles, n_days, solution):
                 client_records[client_idx, 2+day] = vehicle+1
     
     for c in range(client_records.shape[0]):
+        total_clients_demand += (data[c, conf.DEMAND_INDEX] * data[c, conf.FREQ_VISIT_INDEX])
+
         schedule = np.zeros(n_days, dtype=int)
         for day in range(n_days):
             if client_records[c, 2+day] == 0:
@@ -419,21 +491,25 @@ def check_solution(data, n_vehicles, n_days, solution):
         client_records[c, -1] = int(''.join(map(str, schedule)), 2)
 
     # compare with data:
+    error_assignation = True
     for c in range(client_records.shape[0]):
         client_idx = client_records[c, 0]
         # print(client_idx)
         if client_idx != data[c, conf.CLIENT_ID_INDEX]:
+            error_assignation = False
             print(f"errore: cliente originale {data[c, conf.CLIENT_ID_INDEX]}, cliente verificato {client_idx}")
         if client_records[c, 1] != data[c, conf.FREQ_VISIT_INDEX]:
+            error_assignation = False
             print(f"errore: frequenza sbagliata del cliente {client_idx}, richiesta {data[c, conf.FREQ_VISIT_INDEX]}, attuale {client_records[c, 1]}")
         if client_records[c, -1] not in data[c, conf.VISIT_START_INDEX:]:
-            print(f"")
+            error_assignation = False
             print(f"errore: la schedule non è tra quelle previste del cliente {client_idx} --> {client_records[c, -1]} vs {data[c, conf.VISIT_START_INDEX:]}")
-        # if client_idx == 9:
-        #     print(f"c{client_idx}: {client_records[c, -1]}, {data[c, conf.VISIT_START_INDEX:]}")
-        # print(f"")
-        # print(f"cosa strana: cliente {client_idx} --> {client_records[c, -1]} vs {data[c, conf.VISIT_START_INDEX:]}\n{client_records[client_idx, 2:]}")
+    if error_assignation == True:    
+        print("TUTTE LE ASSEGNAZIONI RISULTANO CORRETTE")
 
+    if total_transported_demand != total_clients_demand:
+        print(f"errore: la domanda della soluzione ({total_transported_demand}) non corrisponde a quella dei clienti ({total_clients_demand})")
+    print("LA DOMANDA TOTALE SEMBRA CORRETTA")
     # print(client_records)
     return 
 
@@ -441,53 +517,97 @@ def check_solution(data, n_vehicles, n_days, solution):
 
 def main():
 
-    '''DATA PREPARATION'''
-    # file_path = "data/p0_trial.txt"
-    file_index = 2
-    file_path = f"data/p02.txt"
-    distance_type = 1
-    # Prepare data
-    (n_vehicles, n_days, vehicle_capacity,
-        data, sorted_data, n_clients, max_clients_kd, first_data_index,
-        distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
-        utils.data_preparation(file_path, distance_type)
+    instance_files = [f"p{str(i).zfill(2)}.txt" for i in range(1, 32+1)]
 
-    ''' INITIAL SOLUTION '''
-    solution_0 = algorithms.assign_route.assign_to_1_vehicle_algorithm(
-            n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix)
+    for fname in instance_files:
+        file_path = os.path.join("data", fname)
+        if not os.path.exists(file_path):
+            print(f"File non trovato: {file_path} — salto")
+            continue
 
-    # check fesibility
-    V_distances_matrix, V_loads_matrix, solution_0 = check_feasibility_1vehicle(
-        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, 
-        solution_0)    
-    if np.any(solution_0.feasibility_vector) != 1 or np.any(solution_0.verification_vector) != 1:
-        print("potrebbe esserci un problema")
+        print(f"\n\n=== Running instance {file_path} ===")
+        distance_type = 1
+    
+        '''DATA PREPARATION'''
+        distance_type = 1
 
-    ''' OPTMIZED SOLUTION '''
+        # Prepare data
+        (n_vehicles, n_days, vehicle_capacity,
+            data, sorted_data, n_clients, max_clients_kd, first_data_index,
+            distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
+            utils.data_preparation(file_path, distance_type)
 
-    ''' optimize route '''
-    # solution_1 = optimize_route(n_vehicles, n_days, distance_matrix, solution_0)
+        ''' INITIAL SOLUTION '''
+        solution_0 = algorithms.assign_route.assign_to_1_vehicle_algorithm(
+                n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix)
 
-    # solution_1.OBJ_tot_dist = 0
-    # (OBJ_tot_dist_optimized) = calculate_tot_dist(n_vehicles, n_days, solution_1.route_dist_matrix, solution_1.OBJ_tot_dist)
-    # print("original_tot_dist:", solution_0.OBJ_tot_dist)
-    # print("optimized_tot_dist:", OBJ_tot_dist_optimized)
+        # check fesibility
+        V_distances_matrix, V_loads_matrix, solution_0 = check_feasibility_1vehicle(
+            n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, 
+            solution_0)    
+        if np.any(solution_0.feasibility_vector) != 1 or np.any(solution_0.verification_vector) != 1:
+            print("potrebbe esserci un problema")
 
-    # for vehicle in range(n_vehicles):
-    #     print(f"v{vehicle}, d0: {solution_0.assigned_ordered_matrix[vehicle][0]}")
-    # (n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution)
 
-    ''' optimize day '''
-    solution_1 = solve_vrp_day_OLD(n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution_0)
+        ''' OPTMIZED SOLUTION '''
 
-    # check fesibility
-    V_distances_matrix, V_loads_matrix, solution_0 = check_feasibility_pvrp(
-        n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, 
-        solution_0)    
-    if np.any(solution_0.feasibility_vector) != 1 or np.any(solution_0.verification_vector) != 1:
-        print("potrebbe esserci un problema")
+        ''' optimize route '''
+        solution_1 = optimize_route(n_vehicles, n_days, distance_matrix, solution_0)
 
-    check_solution(data, n_vehicles, n_days, solution_1)
+        solution_1.OBJ_tot_dist = 0
+        (OBJ_tot_dist_optimized) = calculate_tot_dist(n_vehicles, n_days, solution_1.route_dist_matrix, solution_1.OBJ_tot_dist)
+        # print("\noriginal_tot_dist:", solution_0.OBJ_tot_dist)
+        # print("optimized_tot_dist:", OBJ_tot_dist_optimized)
+        # print("\n\n")
+
+    # crea DataFrame con i risultati cumulativi
+    df = pd.DataFrame(
+        score_table_global,
+        index=algo_names,
+        columns=["pos1", "pos2", "pos3", "pos4"]
+    )
+
+    # crea la cartella di output se non esiste
+    # cartella dello script corrente
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # percorso completo della cartella di output
+    output_dir = os.path.join(script_dir, "route_optimizer_test")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # file paths
+    excel_path = os.path.join(output_dir, "results_summary.xlsx")
+    txt_path   = os.path.join(output_dir, "results_summary.txt")
+
+    # stampa su schermo
+    print("\n\n===== RISULTATI CUMULATIVI =====")
+    print(df)
+
+    # salva su file Excel
+    df.to_excel(excel_path, index=True)
+    print(f"\nTabella salvata in formato Excel: {excel_path}")
+
+    # salva anche in formato testo (tabella leggibile)
+    with open(txt_path, "w") as f:
+        f.write("===== RISULTATI CUMULATIVI =====\n")
+        f.write(df.to_string())
+    print(f"Tabella salvata anche come testo: {txt_path}")
+
+        # for vehicle in range(n_vehicles):
+        #     print(f"v{vehicle}, d0: {solution_0.assigned_ordered_matrix[vehicle][0]}")
+        # (n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution)
+
+        # ''' optimize day '''
+        # solution_1 = solve_vrp_day(n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, solution_0)
+
+        # # check fesibility
+        # V_distances_matrix, V_loads_matrix, solution_0 = check_feasibility_pvrp(
+        #     n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, 
+        #     solution_0)    
+        # if np.any(solution_0.feasibility_vector) != 1 or np.any(solution_0.verification_vector) != 1:
+        #     print("potrebbe esserci un problema")
+
+        # check_solution(data, n_vehicles, n_days, solution_1)
 
 
 if __name__ == "__main__":
