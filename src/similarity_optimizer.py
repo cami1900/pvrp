@@ -9,8 +9,11 @@ import numpy as np
 import algorithms
 import utils
 from new_route_optimizer import solve_vrp_day
-from algorithms.similarity_measures import (def_sim_1_matrix, measure_sim_1)
+from algorithms.similarity_measures import (def_sim_1_matrix, measure_sim_1, measure_sim_int, get_sim_functions)
+import algorithms.similarity_measures as sim_calc
 from test_similarity import (measure_sim_2, measure_sim_3)
+from algorithms.VND_multiOBJ import (crete_new_sol_attributes, optimize_single_route, calculate_tot_dist)
+from classes import Solution_multiOBJ
 
 
 def generate_combinations(n_days, n_vehicles):
@@ -63,29 +66,31 @@ def t_swap_r_k_worse(n_days, n_vehicles, max_iterations, best_solution):
 
         ''' swap '''
         assigned_clients = copy.deepcopy(best_solution.assigned_ordered_matrix)
-        sim_int_1_matrix_sol = def_sim_1_matrix(n_vehicles, n_days, assigned_clients)
+        set_clients_per_veichle_base_sol = def_sim_1_matrix(n_vehicles, n_days, assigned_clients)
         
-        assigned_clients[vehicle_i, day_i] = best_solution.assigned_ordered_matrix[vehicle_f, day_i]
-        assigned_clients[vehicle_f, day_i] = best_solution.assigned_ordered_matrix[vehicle_i, day_i]
-        sim_int_1_matrix_new_sol = def_sim_1_matrix(n_vehicles, n_days, assigned_clients)
+        assigned_clients[vehicle_i, day_i] = copy.deepcopy(best_solution.assigned_ordered_matrix[vehicle_f, day_i])
+        assigned_clients[vehicle_f, day_i] = copy.deepcopy(best_solution.assigned_ordered_matrix[vehicle_i, day_i])
+        set_clients_per_veichle_new_sol = def_sim_1_matrix(n_vehicles, n_days, assigned_clients)
 
-        # valuto il costo totale
-        # sim_int_sol = 0
-        # sim_int_new_sol = 0
-        # for vehicle in range(n_vehicles):
-        #     sim_int_sol += len(sim_int_1_matrix_sol[vehicle])
-        #     sim_int_new_sol += len(sim_int_1_matrix_new_sol[vehicle])
+        # min(max) --> try to minimize the vehicle with higher number of clients
 
-        # valuto la combo con costo peggiore
+        # set the values to 0:
         worse_sim_int_sol = 0
         worse_sim_int_new_sol = 0
+
+        # search the higher value of clients assigned to a client
         for vehicle in range(n_vehicles):
-            if len(sim_int_1_matrix_sol[vehicle]) > worse_sim_int_sol:
-                worse_sim_int_sol = len(sim_int_1_matrix_sol[vehicle])
-            if len(sim_int_1_matrix_new_sol[vehicle]) > worse_sim_int_new_sol:
-                worse_sim_int_new_sol = len(sim_int_1_matrix_new_sol[vehicle])
+
+            n_clients_v_base = len(set_clients_per_veichle_base_sol[vehicle])
+            n_clients_v_new = len(set_clients_per_veichle_new_sol[vehicle])
+
+            if n_clients_v_base > worse_sim_int_sol: # if the number of clients is bigger than the actual value
+                worse_sim_int_sol = n_clients_v_base
+
+            if n_clients_v_new > worse_sim_int_new_sol: # if the number of clients is bigger than the actual value
+                worse_sim_int_new_sol = n_clients_v_new
         
-        # if sim_int_new_sol < sim_int_sol:
+        # if the new_sol's max number of clients is lower than base_sol's max number of clients: accept swap operation
         if worse_sim_int_new_sol < worse_sim_int_sol:
             # print(f"improved internal similarity \nswap: d{day_i}, v{vehicle_i}-v{vehicle_f}")
             best_solution.assigned_ordered_matrix = assigned_clients
@@ -146,6 +151,89 @@ def t_swap_r_k_tot(n_days, n_vehicles, max_iterations, best_solution):
 
     return best_solution
 
+def t_swap_r_k(sim_type, weights, n_days, n_vehicles, current_solution):
+
+    ''' initial combo'''
+    day_i = random.randint(0, n_days-1)
+    vehicle_i = random.randint(0, n_vehicles-1)
+
+    ''' final combo '''
+    vehicle_f = random.choice([t for t in range(0, n_vehicles) if t != vehicle_i])
+
+    ''' swap '''
+    assigned_clients_new = copy.deepcopy(current_solution.assigned_ordered_matrix)
+    
+    assigned_clients_new[vehicle_i, day_i] = copy.deepcopy(current_solution.assigned_ordered_matrix[vehicle_f, day_i])
+    assigned_clients_new[vehicle_f, day_i] = copy.deepcopy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
+
+    ''' similarity values '''
+    # min(max) --> try to minimize the vehicle with higher number of clients
+    sim_int_value_current = measure_sim_int(n_vehicles, n_days, current_solution.assigned_ordered_matrix)
+    sim_int_value_new = measure_sim_int(n_vehicles, n_days, assigned_clients_new)
+
+    # if the new_sol's max number of clients is lower than base_sol's max number of clients: accept swap operation
+    if sim_int_value_new < sim_int_value_current:
+
+        # creation of new_Solution class attributes: 
+        (new_OBJ_value, new_tot_dist, new_sim_value, 
+        new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, 
+        new_sim_matrix) = \
+            crete_new_sol_attributes(current_solution)
+        
+        # update solution:
+        new_assigned_ordered_matrix = assigned_clients_new
+
+        new_transp_demand_matrix[vehicle_i, day_i] = current_solution.transp_demand_matrix[vehicle_f, day_i]
+        new_transp_demand_matrix[vehicle_f, day_i] = current_solution.transp_demand_matrix[vehicle_i, day_i]
+
+        new_route_dist_matrix[vehicle_i, day_i] = current_solution.route_dist_matrix[vehicle_f, day_i]
+        new_route_dist_matrix[vehicle_f, day_i] = current_solution.route_dist_matrix[vehicle_i, day_i]
+
+        new_tot_dist = current_solution.tot_dist
+
+        # ''' Reorganize the clients (best route) and update the Route distances matrix '''
+        # (new_route_dist_matrix, new_assigned_ordered_matrix) = \
+        #     optimize_single_route(
+        #         n_vehicles, n_days, distance_matrix, closeness_matrix, 
+        #         new_route_dist_matrix, new_assigned_ordered_matrix, 
+        #         vehicle_i, day_i)
+        
+        # (new_route_dist_matrix, new_assigned_ordered_matrix) = \
+        #     optimize_single_route(
+        #         n_vehicles, n_days, distance_matrix, closeness_matrix, 
+        #         new_route_dist_matrix, new_assigned_ordered_matrix, 
+        #         vehicle_f, day_i)
+
+        # new_tot_dist = calculate_tot_dist(n_vehicles, n_days, new_route_dist_matrix)    # dovrebbe essere la stessa!!!
+
+        if sim_type in ["sim_1", "sim_2", "sim_3"]:
+            update_func, measure_func = get_sim_functions(sim_type, sim_calc)
+
+            new_sim_matrix = update_func(n_days,
+                new_assigned_ordered_matrix, new_sim_matrix, 
+                vehicle_i, day_i)
+            new_sim_matrix = update_func(n_days,
+                new_assigned_ordered_matrix, new_sim_matrix, 
+                vehicle_f, day_i)
+
+            new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
+                measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+    
+    ''' Calculate OBJ value '''
+    new_dist_value = new_tot_dist/current_solution.dist_value
+    new_dissim_value  = 1-new_sim_value
+    new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
+
+    # Save new solution:
+    new_solution = Solution_multiOBJ(
+        new_OBJ_value, new_tot_dist, new_sim_value, 
+        new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, 
+        new_sim_matrix)
+
+    return new_solution
+
+
+
 
 def sim_matrix_clean(sim_matrix_sol):
 
@@ -173,7 +261,7 @@ def test_t_swap_r_k_versions(n_days, n_vehicles, start_sol_base, start_sol_new, 
     Salva i risultati in due file di testo distinti, nel formato compatto richiesto.
     """
 
-    iteration_values = list(range(250, 10001, 250))
+    iteration_values = list(range(100, 5001, 100))
 
     versions = {
         "t_swap_r_k_worse": t_swap_r_k_worse,
@@ -210,7 +298,7 @@ def test_t_swap_r_k_versions(n_days, n_vehicles, start_sol_base, start_sol_new, 
 
             # similarity 1
             (starting_sim_1_value, _, _, _) = measure_sim_1(
-                n_vehicles, sim1_start_sol_base, sim1_start_sol_new
+                n_vehicles, n_days, sim1_start_sol_base, sim1_start_sol_new
             )
             # similarity 2
             (_, starting_sim_2_value, _, _, _) = measure_sim_2(
@@ -239,7 +327,7 @@ def test_t_swap_r_k_versions(n_days, n_vehicles, start_sol_base, start_sol_new, 
 
             # similarity 1
             (opt_sim_1_value, _, _, _) = measure_sim_1(
-                n_vehicles, sim1_opt_sol_base, sim1_opt_sol_new
+                n_vehicles, n_days, sim1_opt_sol_base, sim1_opt_sol_new
             )
             # similarity 2
             (_, opt_sim_2_value, _, _, _) = measure_sim_2(
@@ -542,18 +630,20 @@ if __name__ == "__main__":
           distance_matrix, distance_matrix_adjusted, closeness_matrix)
    
     ''' INSTANCE NEW '''
-    #Create new instances (demand fluctuation)
-    # data_new = utils.create_new_dataset(
-    #     path_data_base, path_data_new,
-    #     data, first_data_index, vehicle_capacity, n_vehicles, n_days,
-    #     distance_type,
-    #     total_mode, fluct_mode, client_affected_pct, variance_pct, distr_type, margin_pct,
-    #     )
-    # sorted_data_new = utils.sort_data(data_new)
-    (n_vehicles, n_days, vehicle_capacity,
-      data_new, sorted_data_new, n_clients, max_clients_kd, first_data_index,
-        distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
-        utils.data_preparation(path_data_new, distance_type)
+    # Create new instances (demand fluctuation)
+    data_new = utils.create_new_dataset(
+        path_data_base, path_data_new,
+        data, first_data_index, vehicle_capacity, n_vehicles, n_days,
+        distance_type,
+        total_mode, fluct_mode, client_affected_pct, variance_pct, distr_type, margin_pct,
+        )
+    sorted_data_new = utils.sort_data(data_new)
+
+    # Use existing dataset
+    # (n_vehicles, n_days, vehicle_capacity,
+    #   data_new, sorted_data_new, n_clients, max_clients_kd, first_data_index,
+    #     distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
+    #     utils.data_preparation(path_data_new, distance_type)
     
     solution_new = algorithms.assign_route.assign_to_1_vehicle_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, sorted_data_new,

@@ -1115,7 +1115,7 @@ def plot_save_VND_graph_old(all_solutions_VND, graphname_outdir):
     return
 
 
-def plot_save_VND_graph(solution_history, graphname_outdir):
+def plot_save_iteration_graph(solution_history, graphname_outdir):
 
     """
     Crea un grafico dell'andamento della funzione obiettivo per il VND,
@@ -1174,6 +1174,54 @@ def plot_save_VND_graph(solution_history, graphname_outdir):
     # Salva automaticamente il grafico
     plt.savefig(graphname_outdir, dpi=300, bbox_inches="tight")
     plt.close()  # chiude la figura per evitare conflitti
+
+    return
+
+
+def plot_save_time_graph(solution_history, graphname_outdir):
+    """
+    Crea un grafico dell'andamento della funzione obiettivo per il VND,
+    mostrando il progresso rispetto al tempo cumulativo (in secondi).
+
+    Parametri
+    ----------
+    solution_history = [(
+            best_solution.OBJ_tot_dist,   # [0]
+            current_solution.OBJ_tot_dist,# [1]
+            neigh_order[neighbour],       # [2]
+            n_iterations,                 # [3]
+            elapsed_time,                 # [4] tempo dall'ultima registrazione
+            *score_neigh
+        ), 
+        [...], 
+        ...]
+    """
+
+    obj_values = []
+    time_total = []
+    cumulative_time = 0.0
+
+    for repetition in solution_history:
+        # aggiorna tempo cumulativo
+        cumulative_time += repetition[4]
+        time_total.append(cumulative_time)
+
+        # valore obiettivo (best solution)
+        obj_values.append(repetition[0])
+
+    # --- Plot ---
+    plt.figure(figsize=(17, 6))
+    plt.plot(time_total, obj_values, marker='o', label='Objective Value')
+
+    plt.xlabel('Elapsed Time (s)')
+    plt.ylabel('Objective Value')
+    plt.title('VND Objective Function Progression over Time')
+    plt.legend()
+    plt.grid(True)
+
+    # Salva automaticamente il grafico
+    plt.savefig(graphname_outdir, dpi=300, bbox_inches="tight")
+    plt.close()
 
     return
 
@@ -1238,5 +1286,61 @@ def plot_save_vehi_routes(n_vehicles, n_days, data, assigned_ordered_matrix, img
     plt.close()  # chiude la figura per evitare conflitti
 
     return
+
+
+def plot_save_day_routes(n_vehicles, n_days, data, assigned_ordered_matrix, imgname_outdir):
+    """
+    Plots all vehicle routes for each day (one subplot per day), with depot highlighted.
+
+    Args:
+        data (np.ndarray): Array with client data (includes X and Y coordinates).
+        assigned_ordered_matrix (list): [vehicle][day] -> list of client IDs.
+        imgname_outdir (str): Path to save the figure (if not 0).
+
+    Returns:
+        None
+    """
+
+    colors = plt.cm.get_cmap("tab10", n_vehicles)  # Up to 10 colors for vehicles
+
+    fig, axes = plt.subplots(1, n_days, figsize=(5 * n_days, 6), sharex=True, sharey=True)
+
+    # Se è un solo giorno, forziamo la lista
+    if n_days == 1:
+        axes = [axes]
+
+    for d in range(n_days):
+        ax = axes[d]
+        ax.set_title(f"Day {d + 1}")
+        ax.set_xlabel("X Coordinate")
+        ax.set_ylabel("Y Coordinate")
+        ax.grid(True)
+
+        # Plot each vehicle's route for this day
+        for v in range(n_vehicles):
+            route = assigned_ordered_matrix[v][d]
+            if np.all(route == 0):
+                continue
+
+            x = [data[c, conf.X_COORD_INDEX] for c in route]
+            y = [data[c, conf.Y_COORD_INDEX] for c in route]
+
+            ax.plot(x, y, marker='o', label=f"Vehicle {v + 1}", color=colors(v))
+
+        # Highlight the depot
+        ax.scatter(data[0, conf.X_COORD_INDEX], data[0, conf.Y_COORD_INDEX],
+                   c='black', marker='s', s=100, label='Depot')
+
+        ax.legend()
+
+    plt.tight_layout()
+
+    # Salva il grafico
+    if imgname_outdir != 0:
+        plt.savefig(imgname_outdir, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    return
+
 
 

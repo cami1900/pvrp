@@ -10,7 +10,7 @@ import classes
 
 ''' similarity measures '''
 
-def measure_sim_1(n_vehicles, sim_1_base, sim_1_new):
+def measure_sim_1(n_vehicles, n_days, sim_1_base, sim_1_new):
 
     # measure similar clients for each combination vehicle_base-vehicle_new:
     sim_1_combinations_matrix = np.zeros((n_vehicles, n_vehicles), dtype=float)
@@ -161,74 +161,135 @@ def def_sim_1_matrix(n_vehicles, n_days, assigned_clients):
     sim_1_matrix = np.empty(n_vehicles, dtype=object)
     
     for vehicle in range(n_vehicles):
-        clients_in_v = []
+        
+        # clients_in_v = []
+        # for day in range(n_days):
+        #     clients_in_vd = assigned_clients[vehicle, day]
+        #     clients_in_vd = clients_in_vd[clients_in_vd != 0]
+        #     # Iteriamo sui valori reali, non sugli indici
+        #     for client in clients_in_vd:
+        #         if client not in clients_in_v:
+        #             clients_in_v.append(client)
 
-        for day in range(n_days):
-            clients_in_vd = assigned_clients[vehicle, day]
-            clients_in_vd = clients_in_vd[clients_in_vd != 0]
-
-            # Iteriamo sui valori reali, non sugli indici
-            for client in clients_in_vd:
-                if client not in clients_in_v:
-                    clients_in_v.append(client)
-                    
-
-            # for client in range(len(clients_in_vd)):
-            #     if client in clients_in_v:
-            #         continue
-            #     clients_in_v.append(client)
-
+        clients_in_v = extract_clients_in_vehicle(n_days, assigned_clients, vehicle)
         sim_1_matrix [vehicle] = clients_in_v
 
     return sim_1_matrix
 
+def update_sim_1_matrix(n_days, assigned_clients, sim_1_matrix, vehicle, day):
 
-def def_sim_2_matrix(n_vehicles, n_days, solution):
+    clients_in_v = extract_clients_in_vehicle(n_days, assigned_clients, vehicle)
+    sim_1_matrix [vehicle] = clients_in_v
 
-    assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
+    return sim_1_matrix
+
+def extract_clients_in_vehicle(n_days, assigned_clients, vehicle):
+
+    clients_in_v = []
+
+    for day in range(n_days):
+        clients_in_vd = assigned_clients[vehicle, day]
+        clients_in_vd = clients_in_vd[clients_in_vd != 0]
+
+        # Iteriamo sui valori reali, non sugli indici
+        for client in clients_in_vd:
+            if client not in clients_in_v:
+                clients_in_v.append(client)
+                
+
+        # for client in range(len(clients_in_vd)):
+        #     if client in clients_in_v:
+        #         continue
+        #     clients_in_v.append(client)
+
+    return clients_in_v
+
+
+def def_sim_2_matrix(n_vehicles, n_days, assigned_clients):
+
+    # assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
     sim_2_matrix = np.empty((n_vehicles, n_days), dtype=object)
 
     for vehicle in range(n_vehicles):
         for day in range(n_days):
 
-            # clean client list:
             # clients_in_vd = assigned_clients[vehicle, day]
-            # while clients_in_vd[-1] == 0:
-            #     clients_in_vd.pop()
-            # clients_in_vd.append(0)
+            # # Remove trailing zeros
+            # nonzero_indices = np.nonzero(clients_in_vd)[0]
+            # if len(nonzero_indices) > 0:
+            #     last_nonzero = nonzero_indices[-1] + 1
+            #     clients_in_vd = clients_in_vd[:last_nonzero]
+            # else:
+            #     clients_in_vd = np.array([], dtype=int)
+            # # Append a zero at the end
+            # clients_in_vd = np.append(clients_in_vd, 0)
 
-            clients_in_vd = assigned_clients[vehicle, day]
-            # Remove trailing zeros
-            nonzero_indices = np.nonzero(clients_in_vd)[0]
-            if len(nonzero_indices) > 0:
-                last_nonzero = nonzero_indices[-1] + 1
-                clients_in_vd = clients_in_vd[:last_nonzero]
-            else:
-                clients_in_vd = np.array([], dtype=int)
+            # max_clients_vd = len(clients_in_vd)
+            # cl_sequences_vd = []
 
-            # Append a zero at the end
-            clients_in_vd = np.append(clients_in_vd, 0)
+            # for n_clients_route in range(2, max_clients_vd + 1): # for each possible route lengths
+            #     n_clients_sequences = []
 
+            #     for start in range(max_clients_vd + 1 - n_clients_route): # for each possible start node
+            #         start_sequences = []
 
-            max_clients_vd = len(clients_in_vd)
-            cl_sequences_vd = []
-
-            for n_clients_route in range(2, max_clients_vd + 1): # for each possible route lengths
-                n_clients_sequences = []
-
-                for start in range(max_clients_vd + 1 - n_clients_route): # for each possible start node
-                    start_sequences = []
-
-                    for idx in range(start, start + n_clients_route): # for each client in the range 
-                        start_sequences.append(clients_in_vd[idx])
+            #         for idx in range(start, start + n_clients_route): # for each client in the range 
+            #             start_sequences.append(clients_in_vd[idx])
     
-                    n_clients_sequences.append(start_sequences)
+            #         n_clients_sequences.append(start_sequences)
                 
-                cl_sequences_vd.append(n_clients_sequences)
-            
+            #     cl_sequences_vd.append(n_clients_sequences)
+
+            cl_sequences_vd = extract_sequences_in_route(assigned_clients, vehicle, day)
             sim_2_matrix[vehicle, day] = cl_sequences_vd
 
     return sim_2_matrix
+
+def update_sim_2_matrix(n_days, assigned_clients, sim_2_matrix, vehicle, day):
+
+    cl_sequences_vd = extract_sequences_in_route(assigned_clients, vehicle, day)
+    sim_2_matrix[vehicle, day] = cl_sequences_vd
+
+    return sim_2_matrix
+
+def extract_sequences_in_route(assigned_clients, vehicle, day):
+
+    # clean client list:
+    # clients_in_vd = assigned_clients[vehicle, day]
+    # while clients_in_vd[-1] == 0:
+    #     clients_in_vd.pop()
+    # clients_in_vd.append(0)
+
+    clients_in_vd = assigned_clients[vehicle, day]
+    # Remove trailing zeros
+    nonzero_indices = np.nonzero(clients_in_vd)[0]
+    if len(nonzero_indices) > 0:
+        last_nonzero = nonzero_indices[-1] + 1
+        clients_in_vd = clients_in_vd[:last_nonzero]
+    else:
+        clients_in_vd = np.array([], dtype=int)
+
+    # Append a zero at the end
+    clients_in_vd = np.append(clients_in_vd, 0)
+
+
+    max_clients_vd = len(clients_in_vd)
+    cl_sequences_vd = []
+
+    for n_clients_route in range(2, max_clients_vd + 1): # for each possible route lengths
+        n_clients_sequences = []
+
+        for start in range(max_clients_vd + 1 - n_clients_route): # for each possible start node
+            start_sequences = []
+
+            for idx in range(start, start + n_clients_route): # for each client in the range 
+                start_sequences.append(clients_in_vd[idx])
+
+            n_clients_sequences.append(start_sequences)
+        
+        cl_sequences_vd.append(n_clients_sequences)
+
+    return cl_sequences_vd
 
 
 def def_sim_3_matrix(n_vehicles, n_days, solution):
@@ -238,19 +299,56 @@ def def_sim_3_matrix(n_vehicles, n_days, solution):
 
     for vehicle in range(n_vehicles):
         for day in range(n_days):
-            client_list = assigned_clients[vehicle, day]
-            edges = []
 
-            for idx in range(len(client_list) - 1):
-                client_i = client_list[idx]
-                client_j = client_list[idx+1]
-                if (client_i, client_j) != (0, 0):   # Escludi (0,0)
-                    edges.append((client_i, client_j))
+            # client_list = assigned_clients[vehicle, day]
+            # edges = []
+            # for idx in range(len(client_list) - 1):
+            #     client_i = client_list[idx]
+            #     client_j = client_list[idx+1]
+            #     if (client_i, client_j) != (0, 0):   # Escludi (0,0)
+            #         edges.append((client_i, client_j))
 
-            sim_3_matrix[vehicle, day] = edges
+            arcs_vd = extract_arcs_route(assigned_clients, vehicle, day)
+            sim_3_matrix[vehicle, day] = arcs_vd
 
     return sim_3_matrix
 
+def update_sim_3_matrix(n_days, assigned_clients, sim_3_matrix, vehicle, day):
+
+    arcs_vd = extract_arcs_route(assigned_clients, vehicle, day)
+    sim_3_matrix[vehicle, day] = arcs_vd
+
+    return sim_3_matrix
+
+def extract_arcs_route(assigned_clients, vehicle, day):
+
+    client_list = assigned_clients[vehicle, day]
+    arcs_vd = []
+
+    for idx in range(len(client_list) - 1):
+        client_i = client_list[idx]
+        client_j = client_list[idx+1]
+        if (client_i, client_j) != (0, 0):   # Escludi (0,0)
+            arcs_vd.append((client_i, client_j))
+
+    return arcs_vd
+
+
+def measure_sim_int(n_vehicles, n_days, assigned_clients):
+
+    # assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
+    sim_1_matrix = np.empty(n_vehicles, dtype=object)
+    sim_int_matrix = np.zeros(n_vehicles, dtype=int)
+    
+    for vehicle in range(n_vehicles):
+        
+        clients_in_v = extract_clients_in_vehicle(n_days, assigned_clients, vehicle)
+        sim_1_matrix[vehicle] = clients_in_v
+        sim_int_matrix[vehicle] = len(clients_in_v)
+
+    sim_int_value = np.max(sim_int_matrix)
+
+    return sim_int_value
 
 ''' other functions '''
 
@@ -281,6 +379,22 @@ def get_max_seq_len(seq_group):
         return len(last_seq) if isinstance(last_seq, (list, np.ndarray)) else 0
     return 0
 
+def get_sim_functions(sim_type, sim_calc):
+    update_funcs = {
+        "sim_1": sim_calc.update_sim_1_matrix,
+        "sim_2": sim_calc.update_sim_2_matrix,
+        "sim_3": sim_calc.update_sim_3_matrix
+    }
+    measure_funcs = {
+        "sim_1": sim_calc.measure_sim_1,
+        "sim_2": sim_calc.measure_sim_2,
+        "sim_3": sim_calc.measure_sim_3
+    }
+
+    if sim_type not in update_funcs:
+        raise ValueError(f"Tipo di simulazione non supportato: {sim_type}")
+
+    return update_funcs[sim_type], measure_funcs[sim_type]
 
 ''' test '''
 
