@@ -6,6 +6,7 @@ import random
 import conf
 import copy
 import os
+import sys
 import openpyxl
 from openpyxl import Workbook, load_workbook
 
@@ -174,7 +175,8 @@ def log_matrix(matrix, file_path):
 
 ''' CREATE NEW DATASET '''
 
-def create_new_dataset(
+# clients demand can be equal to ZERO
+def create_new_dataset_OLD(
         input_file,
         output_file,
         data, first_data_index, vehicle_capacity, n_vehicles,n_days,
@@ -317,8 +319,177 @@ def create_new_dataset(
 
     return new_data
 
+# clients demand has to be bigger than ONE
+def create_new_dataset(
+        input_file,
+        output_file,
+        data, first_data_index, vehicle_capacity, n_vehicles,n_days,
+        distance_type,
+        total_mode,       # 0 = totale costante, 1 = può variare entro capacità
+        fluct_mode,  # "compensated", "mixed", "uniform"
+        client_affected_pct,        # % di clienti influenzati (0-1)
+        variance_pct,        # ampiezza fluttuazione (% (0-1) rispetto alla domanda)
+        distr_type,         # "gamma" o "poisson"
+        margin_pct,         # % di margine (0-1) 
+):
+
+    # --- 1️⃣ Lettura righe file e parametri generali ---
+    with open(input_file, "r") as f:
+        lines = f.readlines()
+
+    # --- 2️⃣ Se data == 0, estrai i dati ---
+    if isinstance(data, int) and data == 0:
+        (n_vehicles, n_days, vehicle_capacity,
+        data, sorted_data, n_clients, max_clients_kd, first_data_index,
+        distance_matrix, distance_matrix_adjusted, closeness_matrix) = \
+        data_preparation(input_file, distance_type)
+
+    # Crea una copia profonda per modifiche
+    new_data = copy.deepcopy(data)
+
+    # Indice di partenza per modificare i clienti (salta il depot)
+    start_row = first_data_index + 1
+
+    # --- 3️⃣ Parametri base ---
+    demands = data[:, conf.DEMAND_INDEX].copy()
+    original_total = demands.sum()
+    cap_tot = n_vehicles * vehicle_capacity * n_days * (1 - margin_pct)
+
+    n_clients = len(demands)
+    n_affected = max(1, int((n_clients - 1) * client_affected_pct))  # escludi depot
+
+    affected_idx = random.sample(range(1, n_clients), n_affected)
+
+    # --- 4️⃣ Applica le variazioni ---
+    new_demands = demands.copy()
+
+    for i in affected_idx:
+        base = demands[i]
+        if base <= 0:
+            continue
+
+        if distr_type == "gamma":
+            shape = 2.0
+            scale = variance_pct * base / shape
+            variation = np.random.gamma(shape, scale)
+        elif distr_type == "poisson":
+            lam = variance_pct * base
+            variation = np.random.poisson(lam)
+        else:
+            raise ValueError("distr_type deve essere 'gamma' o 'poisson'")
+        
+        # Gestione segno secondo fluct_mode
+        if fluct_mode == "compensated":
+            sign = random.choice([-1, 1])
+        elif fluct_mode == "uniform":
+            sign = 1
+        else:  # mixed
+            sign = random.choice([-1, 1])
+
+        # new_val = max(0, base + sign * variation)
+        # new_demands[i] = int(round(new_val))
+        # Impedisci che la domanda scenda sotto una soglia minima (es. almeno 1 o 10% della base)
+        min_demand = max(1, 0.1 * base)  # puoi parametrizzarlo se vuoi
+        new_val = max(min_demand, base + sign * variation)
+        new_demands[i] = int(round(new_val))
 
 
+    # --- 5️⃣ Se total_mode = 0, compensa la variazione (somma costante) ---
+    if total_mode == 0:
+        diff = new_demands.sum() - original_total
+
+        if diff != 0:
+            # Calcola un fattore di scala proporzionale
+            scale_factor = original_total / new_demands.sum()
+            new_demands = (new_demands * scale_factor).astype(float)
+
+        # Arrotonda e garantisci soglia minima
+        for i in range(1, len(new_demands)):
+            base = demands[i]
+            min_demand = max(1, 0.1 * base)  # evita domanda troppo piccola
+            new_demands[i] = max(min_demand, round(new_demands[i]))
+
+        # Ricontrolla che il totale sia uguale (piccole discrepanze da arrotondamento)
+        diff = new_demands.sum() - original_total
+        if abs(diff) >= 1:
+            adjust_idx = np.random.choice(range(1, len(new_demands)), int(abs(diff)), replace=True)
+            for j in adjust_idx:
+                if diff > 0 and new_demands[j] > 1:
+                    new_demands[j] -= 1
+                elif diff < 0:
+                    new_demands[j] += 1
+
+
+    # Attualmente, la compensazione ridistribuisce la differenza intera con ±1 unità
+    # Questa logica tende ad annullare la variazione se diff è piccolo
+    # Puoi sostituirla con una compensazione proporzionale più “soft”:
+    # if total_mode == 0:
+    #     diff = new_demands.sum() - original_total
+    #     if diff != 0:
+    #         # Distribuisci la differenza proporzionalmente ai valori dei clienti
+    #         ratio = diff / new_demands.sum()
+    #         adj = (new_demands[1:] * ratio).astype(int)
+    #         new_demands[1:] -= adj
+    #     new_demands[new_demands < 0] = 0
+
+    # --- 6️⃣ Se total_mode = 1, controlla la capacità ---
+    elif total_mode == 1:
+        if new_demands.sum() > cap_tot:
+            scale_factor = cap_tot / new_demands.sum()
+            new_demands = np.floor(new_demands * scale_factor).astype(int)
+
+    # --- 7️⃣ Sostituisci i valori aggiornati nel dataset ---
+    # 🔒 Assicurati che nessuna domanda vada a zero
+    for i in range(1, len(new_demands)):
+        base = demands[i]
+        min_demand = max(1, 0.1 * base)  # minimo 1 o 10% della base
+        if new_demands[i] < min_demand:
+            new_demands[i] = int(round(min_demand))
+
+    new_data[:, conf.DEMAND_INDEX] = new_demands
+
+    # # --- 8️⃣ Scrivi il nuovo file completo ---
+    # with open(output_file, "w") as f:
+    #     # Righe iniziali (parametri)
+    #     for line in lines[:first_data_index]:
+    #         f.write(line)
+    #     # Righe clienti (comprese depot)
+    #     for row in new_data:
+    #         row_clean = [str(int(x)) for x in row if not np.isnan(x)]
+    #         f.write(" ".join(row_clean) + "\n")
+
+    # --- 8️⃣ Scrivi il nuovo file completo mantenendo il formato originale ---
+    updated_lines = lines.copy()
+
+    # Aggiorna solo i valori di domanda nelle righe dei clienti
+    # for i, row_idx in enumerate(range(first_data_index + 1, len(lines))):
+    #     parts = lines[row_idx].split()
+    #     if len(parts) > conf.DEMAND_INDEX:
+    #         # aggiorna solo la colonna della domanda
+    #         parts[conf.DEMAND_INDEX + 1] = str(int(new_demands[i])) # +1 perchè in data era stata tolta una colonna e bisogna tenerne di nuovo conto
+    #         updated_lines[row_idx] = " ".join(parts) + "\n"
+
+    for client_i, line_idx in zip(range(1, len(new_demands)), range(first_data_index + 1, len(lines))):
+        parts = lines[line_idx].split()
+        if len(parts) > conf.DEMAND_INDEX:
+            parts[conf.DEMAND_INDEX + 1] = str(int(new_demands[client_i]))
+            updated_lines[line_idx] = " ".join(parts) + "\n"
+
+
+    # Salva tutto nel nuovo file (stesso formato)
+    with open(output_file, "w") as f:
+        f.writelines(updated_lines)
+
+
+    # --- 9️⃣ Report finale ---
+    # print(f"✅ File salvato: {output_file}")
+    # print(f"Domanda totale originale: {original_total}")
+    # print(f"Domanda totale nuova: {int(new_demands.sum())} (capacità max: {int(cap_tot)})")
+
+    # print("data", data)
+    # print("new_data", new_data)
+
+    return new_data
 
 
 ''' MATRICES '''
@@ -445,6 +616,16 @@ def distance_matrix_adjuste_calculator(distance_matrix):
 
 
 ''' PLOT - PRINT - STORE '''
+
+def log_progress(instance_number, current_time, start_time_algorithm, time_limit_algorithm):
+    progress = (current_time - start_time_algorithm) / time_limit_algorithm
+    bar_length = 50  # number of characters in the progress bar
+    filled_length = int(bar_length * progress)
+    bar = "█" * filled_length + "-" * (bar_length - filled_length)
+
+    print(f"\rProgress [{instance_number}]: |{bar}| {progress*100:.1f}% ({int(current_time - start_time_algorithm)}s/{time_limit_algorithm}s)", end="")
+    sys.stdout.flush()
+    return
 
 
 def plot_client_position(data):
@@ -849,8 +1030,43 @@ def save_results_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_
 
 
 
-def save_solution_pvrp_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
-                             solution_0, optimised_solution, 
+def save_initial_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
+                             solution_0, solution_1, 
+                             total_time):
+
+    # Save results in a .txt file
+    lines = []
+    lines.append(f"{instance_number}")
+    lines.append(f"{n_vehicles} {n_clients-1} {n_days} {vehicle_capacity}")
+    lines.append(f"{total_time}")
+    lines.append("")
+    
+    lines.append(f"{solution_0.OBJ_tot_dist}")
+    lines.append("")
+
+    lines.append(f"{solution_1.OBJ_tot_dist}")
+
+    lines.append("Assigned customers matrix:")
+    for vehicle_k, vehicle in enumerate(solution_1.assigned_ordered_matrix):
+        lines.append(f"Vehicle {vehicle_k}:")
+        for day_t, route in enumerate(vehicle):
+            lines.append(f"{' '.join(map(str, route))}")
+        lines.append("")  # Riga vuota tra veicoli
+
+    lines.append("Transported demand matrix:")
+    lines += [' '.join(map(str, row)) for row in solution_1.transp_demand_matrix]
+    lines.append("")
+
+    lines.append("Routes distance matrix:")
+    lines += [' '.join(map(str, row)) for row in solution_1.route_dist_matrix]
+    lines.append("")
+   
+    return '\n'.join(lines)
+
+
+
+def save_opt_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
+                             optimised_solution, 
                              solution_history, neigh_out_parameters, 
                              neigh_order, max_iteration_neigh, time_limit_VND):
 
@@ -859,11 +1075,8 @@ def save_solution_pvrp_in_txt(instance_number, n_vehicles, n_clients, n_days, ve
     lines.append(f"{instance_number}")
     lines.append(f"{n_vehicles} {n_clients-1} {n_days} {vehicle_capacity}")
     lines.append("")
-    
-    lines.append(f"{solution_0.OBJ_tot_dist}")
-    lines.append("")
 
-    lines.append(f"{optimised_solution.OBJ_tot_dist}")
+    lines.append(f"{optimised_solution.tot_dist}")
     # lines.append(f"{total_time}")
     lines.append(f"{max_iteration_neigh} {time_limit_VND}")
     lines.append("Neighbourhoods:")
@@ -1145,7 +1358,7 @@ def plot_save_iteration_graph(solution_history, graphname_outdir):
     for repetition in solution_history:
 
         ## plot x-axis
-        iter_index += repetition[3]
+        iter_index += repetition[5]
         iter_total.append(iter_index)
         
         ## plot y-axis
@@ -1203,7 +1416,7 @@ def plot_save_time_graph(solution_history, graphname_outdir):
 
     for repetition in solution_history:
         # aggiorna tempo cumulativo
-        cumulative_time += repetition[4]
+        cumulative_time += repetition[6]
         time_total.append(cumulative_time)
 
         # valore obiettivo (best solution)

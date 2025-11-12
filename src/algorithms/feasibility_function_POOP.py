@@ -134,6 +134,8 @@ def define_routes(n_vehicles, n_days, n_clients, max_clients_kd, assigned_ordere
     for vehicle_k in range(n_vehicles):
         for day_t in range(n_days):
             for client_i in range(max_clients_kd+1):
+                if client_i == 39:
+                    pass
                 curren_client = assigned_ordered_matrix [vehicle_k][day_t][client_i]
                 next_client = assigned_ordered_matrix [vehicle_k][day_t][client_i+1]
                 routes_matrix[vehicle_k][day_t][curren_client][next_client] = 1
@@ -256,6 +258,11 @@ def verify_distance(n_vehicles, n_days, n_clients, routes_matrix, distance_matri
             # if V_distances_matrix[v, d] != route_dist_matrix[v, d]:
             #     solution.verification_vector.verif_dist = False
             #     print(f"Total distance of vehicle {v} in the day {d} is wrong")
+
+            # print("******************************************")
+            # print(f"V_distances_matrix[v, d]:\n{V_distances_matrix[v, d]}")
+            # print(f"route_dist_matrix[v, d]:\n{route_dist_matrix[v, d]}")
+            # print("******************************************")
 
             if not np.isclose(V_distances_matrix[v, d], route_dist_matrix[v, d], 1e-06, 1e-06):
                 solution.verification_vector.verif_dist = False

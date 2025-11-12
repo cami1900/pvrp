@@ -8,7 +8,8 @@ import classes
 import algorithms.VND_new as VND_new
 # from py2opt.routefinder import RouteFinder
 from py2opt142.py2opt.routefinder import RouteFinder
-
+import pyvrp
+import math
 
 
 
@@ -218,8 +219,6 @@ def assign_not_assigned(n_vehicles, n_days, distance_matrix, closeness_matrix, v
     return (solution, error_index)     # fine, esci!
 
 
-
-
 def assign_to_combos(n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
                      solution, selected_schedule, available_days, available_vehicles, client):
 
@@ -244,6 +243,101 @@ def assign_to_combos(n_vehicles, n_days, data, distance_matrix, closeness_matrix
             solution.route_dist_matrix, solution.OBJ_tot_dist)
 
     return solution
+
+
+def solve_vrp_day(n_vehicles, n_days, n_clients, vehicle_capacity, max_clients_kd, data, distance_matrix, max_iter_vrp, solution):
+
+    # new_solution = copy.deepcopy(solution)
+    new_solution = crete_new_sol_empty(n_vehicles, n_days, n_clients, max_clients_kd)
+
+    ''' create the model '''    # prepare needed data and add them to the model
+    depot = (data[0, conf.X_COORD_INDEX], data[0, conf.Y_COORD_INDEX])  # coordinate del deposito
+
+    for day in range(n_days):
+        clients = []
+        for vehicle in range(n_vehicles):
+            clients_vd = solution.assigned_ordered_matrix[vehicle][day]
+            for cl_idx in clients_vd:
+                if cl_idx != 0: # ignora il depot
+                    x = data[cl_idx, conf.X_COORD_INDEX]
+                    y = data[cl_idx, conf.Y_COORD_INDEX]
+                    demand = data[cl_idx, conf.DEMAND_INDEX]
+                    clients.append({
+                        "id": int(cl_idx),
+                        "x": float(x),
+                        "y": float(y),
+                        "demand": float(demand)
+                    })
+
+        model = pyvrp.Model()
+        # aggiungi deposito
+        depot_loc = model.add_depot(*depot, name="Depot")
+        # aggiungi clienti
+        client_map = {}  # chiave: indice interno PyVRP, valore: indice originale in `data`
+        for i, c in enumerate(clients):
+            client_obj = model.add_client(
+                c["x"],
+                c["y"],
+                delivery=[int(c["demand"])],
+                pickup=[],
+                service_duration=0,
+                name=f"C{c['id']}"
+            )
+            client_map[i+1] = c["id"]  # +1 perché PyVRP usa 0 come deposito
+        # crea matrice distanze -->     potresti già avere la funzione che estrae la matrice distanze di clienti selezionati!!!!!
+        locations = model.locations
+        for i in locations:
+            for j in locations:
+                if i != j:
+                    dist = math.hypot(i.x - j.x, i.y - j.y)
+                    model.add_edge(i, j, distance=dist, duration=dist)
+        #definisci veicoli
+        model.add_vehicle_type(
+            num_available=n_vehicles,
+            capacity=[vehicle_capacity],
+            fixed_cost=0,
+            unit_distance_cost=1,
+            name="Truck"
+        )
+
+        ''' solve VRP '''
+        stop_criterion = MaxIters(max_iter_vrp)
+        result = model.solve(stop=stop_criterion, seed=0, collect_stats=False, display=False)
+
+        # print 
+        new_routes = []
+        for route in result.best.routes():
+            mapped_route = []
+            for c in route:
+                if isinstance(c, int):
+                    if c == 0:
+                        mapped_route.append(0)  # depot
+                    else:
+                        mapped_route.append(client_map[c])
+                else:
+                    mapped_route.append(client_map[c.index])
+            new_routes.append(mapped_route)
+
+        ''' update solution '''
+        
+        # save data
+        original_distance = 0
+        for vehicle in range(len(new_routes)):
+            selected_route = new_routes[vehicle]    # puoi scegliere in base alla similarità!!!!!!
+            new_solution.assigned_ordered_matrix[vehicle][day][1:len(selected_route)+1] = selected_route
+            selected_route_distance = route_distance(distance_matrix, new_solution.assigned_ordered_matrix[vehicle][day])
+            new_solution.route_dist_matrix[vehicle][day] = selected_route_distance
+            selected_route_demand = route_demand(data, selected_route)
+            new_solution.transp_demand_matrix[vehicle][day] = selected_route_demand
+            original_distance += solution.route_dist_matrix[vehicle][day]
+            # print(f"\n\nv{vehicle}, d{day}")
+            # print(f"\nold route: {solution.assigned_ordered_matrix[vehicle][day]} \nnew route: {new_solution.assigned_ordered_matrix[vehicle][0]}")
+            # print(f"old length: {solution.route_dist_matrix[vehicle][day]}, new length: {new_solution.route_dist_matrix[vehicle][0]}")
+    
+    new_solution.OBJ_tot_dist = calculate_tot_dist(n_vehicles, n_days, new_solution.route_dist_matrix, new_solution.OBJ_tot_dist)
+    # print(f"\nold distance: {solution.OBJ_tot_dist}, new distance: {new_solution.OBJ_tot_dist}")
+
+    return new_solution
 
 
 ''' STEPS FUNCTIONS '''
@@ -706,4 +800,36 @@ def two_opt_route(n_vehicles, n_days, distance_matrix, distance_matrix_adjusted,
 
 ''' OTHER FUNCTIONS '''
 
+''' optimize day (VRP) '''
+class MaxIters:
+    def __init__(self, max_iters):
+        self.max_iters = max_iters
+        self.counter = 0
 
+    def __call__(self, best_cost):
+        self.counter += 1
+        return self.counter >= self.max_iters
+
+def crete_new_sol_empty(n_vehicles, n_days, n_clients, max_clients_kd):
+
+    assigned_ordered_matrix = np.zeros((n_vehicles, n_days, max_clients_kd+2), dtype=int)
+    not_assigned_list = np.zeros((n_clients), dtype=int)
+    transp_demand_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+    route_dist_matrix = np.zeros((n_vehicles, n_days), dtype=float)
+    OBJ_tot_dist = 0
+
+    new_solution = classes.Solution(OBJ_tot_dist, assigned_ordered_matrix, not_assigned_list, transp_demand_matrix, route_dist_matrix)
+
+    return new_solution
+
+def route_distance(distance_matrix, route):
+
+    distance = sum(distance_matrix[route[i], route[i + 1]] for i in range(len(route) - 1))
+
+    return distance
+
+def route_demand(data, route):
+
+    transported_demand = sum(data[route[i], conf.DEMAND_INDEX] for i in range(len(route)))
+
+    return transported_demand

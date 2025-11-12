@@ -101,9 +101,15 @@ class Solution:
             print("verif_load:", self.verif_load)
 
 class Solution_multiOBJ:
-    def __init__(self, OBJ_value, tot_dist, sim_value,
-                    assigned_ordered_matrix, not_assigned_list, transp_demand_matrix, 
-                    route_dist_matrix, sim_matrix):
+    def __init__(self, 
+                 OBJ_value : float, 
+                 tot_dist : float,
+                 sim_value : float,
+                 assigned_ordered_matrix, 
+                 not_assigned_list, 
+                 transp_demand_matrix,
+                 route_dist_matrix, 
+                 sim_matrix):
         self.OBJ_value = OBJ_value
         self.tot_dist = tot_dist
         self.sim_value = sim_value

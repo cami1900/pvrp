@@ -21,17 +21,18 @@ def measure_sim_1(n_vehicles, n_days, sim_1_base, sim_1_new):
         if tot_clients_in_v_base == 0:
             for vehicle_new in range(n_vehicles):
                 sim_1_combinations_matrix[vehicle_base, vehicle_new] = 0
+            continue  # ⬅️ salta alla prossima iterazione del ciclo esterno
 
         for vehicle_new in range(n_vehicles):
             # find common_clients for each combination v_base-v_new:
             sim_1_combinations_matrix[vehicle_base, vehicle_new] = len(np.intersect1d(sim_1_base[vehicle_base], sim_1_new[vehicle_new]))
-            print(f"\nv_base{vehicle_base}, v_new{vehicle_new}")
-            print("common clients:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
+            # print(f"\nv_base{vehicle_base}, v_new{vehicle_new}")
+            # print("common clients:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
 
             # calculate sim_1_measure = common_clients / tot_clients_base
             sim_1_combinations_matrix[vehicle_base, vehicle_new] = (sim_1_combinations_matrix[vehicle_base, vehicle_new])/tot_clients_in_v_base
-            print("base clients:", tot_clients_in_v_base)
-            print("similarity value:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
+            # print("base clients:", tot_clients_in_v_base)
+            # print("similarity value:", sim_1_combinations_matrix[vehicle_base, vehicle_new])
     
     # find best combinations:
     # linear_sum_assignment minimizza di default → usiamo il negativo per massimizzare
@@ -79,6 +80,7 @@ def measure_sim_2(n_vehicles, n_days, sim_2_base, sim_2_new):
                 if max_len_in_vd_base == 0:
                     for n_clients_route in range(max_len_in_vd-1):
                         sim_2_matrix[vehicle_new, day] = 0
+                    continue  # ⬅️ evita la divisione per 0
 
                 for n_clients_route in range(max_len_in_vd-1):
 
@@ -292,9 +294,9 @@ def extract_sequences_in_route(assigned_clients, vehicle, day):
     return cl_sequences_vd
 
 
-def def_sim_3_matrix(n_vehicles, n_days, solution):
+def def_sim_3_matrix(n_vehicles, n_days, assigned_clients):
 
-    assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
+    # assigned_clients = copy.deepcopy(solution.assigned_ordered_matrix)
     sim_3_matrix = np.empty((n_vehicles, n_days), dtype=object)
 
     for vehicle in range(n_vehicles):
@@ -380,6 +382,13 @@ def get_max_seq_len(seq_group):
     return 0
 
 def get_sim_functions(sim_type, sim_calc):
+
+    def_funcs = {
+        "sim_1": sim_calc.def_sim_1_matrix,
+        "sim_2": sim_calc.def_sim_2_matrix,
+        "sim_3": sim_calc.def_sim_3_matrix
+    }
+
     update_funcs = {
         "sim_1": sim_calc.update_sim_1_matrix,
         "sim_2": sim_calc.update_sim_2_matrix,
@@ -394,7 +403,7 @@ def get_sim_functions(sim_type, sim_calc):
     if sim_type not in update_funcs:
         raise ValueError(f"Tipo di simulazione non supportato: {sim_type}")
 
-    return update_funcs[sim_type], measure_funcs[sim_type]
+    return def_funcs[sim_type], update_funcs[sim_type], measure_funcs[sim_type]
 
 ''' test '''
 
