@@ -1411,7 +1411,7 @@ def pick_client(current_solution, vehicle_i, day_i, clients_filtred, avoid_clien
     return (real_client_index, True)
 
 
-def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
+def pick_set_clients_OLD(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
 
     client_list = copy.copy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
     # remove zeros:
@@ -1467,6 +1467,75 @@ def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_f
         real_client_index[0] = real_client_index_2
 
     return (real_client_index, number_clients, True)
+
+
+def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
+    # copia e rimuove zeri
+    client_list = copy.copy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
+    client_list = client_list[client_list != 0]
+
+    # se lista vuota
+    if client_list.size == 0:
+        return (0, 0, False)
+
+    # pick random client #1
+    real_client_index_1 = int(random.choice(client_list))
+    where_cl1 = int(np.where(client_list == real_client_index_1)[0][0])
+    n_clients = len(client_list)
+
+    # se number_clients == 0 -> prendi qualsiasi altro cliente
+    if number_clients == 0:
+        if n_clients == 1:
+            return (0, 0, False)
+        others = client_list[client_list != real_client_index_1]
+        real_client_index_2 = int(random.choice(others))
+        where_cl2 = int(np.where(client_list == real_client_index_2)[0][0])
+    else:
+        # vogliamo che la dimensione del blocco sia in [number_clients-1, number_clients+1]
+        candidate_clients = []
+
+        for k in (number_clients - 1, number_clients, number_clients + 1):
+            if k < 1:
+                continue
+            step = k - 1  # se la lunghezza è k, la distanza in indici è k-1
+            # indice a sinistra
+            idx_left = where_cl1 - step
+            if 0 <= idx_left < n_clients and idx_left != where_cl1:
+                candidate_clients.append(int(client_list[idx_left]))
+            # indice a destra
+            idx_right = where_cl1 + step
+            if 0 <= idx_right < n_clients and idx_right != where_cl1:
+                candidate_clients.append(int(client_list[idx_right]))
+
+        # rimuovi duplicati
+        candidate_clients = list(dict.fromkeys(candidate_clients))
+
+        # fallback: se non ci sono candidati (bordo estremo o lista corta),
+        # considera tutti i client entro +- (number_clients+1) indici e escludi il primo
+        if not candidate_clients:
+            left = max(0, where_cl1 - (number_clients + 1))
+            right = min(n_clients - 1, where_cl1 + (number_clients + 1))
+            window = [int(x) for i, x in enumerate(client_list[left:right + 1]) if (left + i) != where_cl1]
+            if not window:
+                return (0, 0, False)
+            candidate_clients = window
+
+        real_client_index_2 = int(random.choice(candidate_clients))
+        where_cl2 = int(np.where(client_list == real_client_index_2)[0][0])
+
+    # calcolo numero clienti effettivo (inclusivi)
+    number_clients_final = abs(where_cl1 - where_cl2) + 1
+
+    # ordina in output (prima = inizio, seconda = fine)
+    real_client_index = np.zeros(2, dtype=int)
+    if where_cl1 <= where_cl2:
+        real_client_index[0] = real_client_index_1
+        real_client_index[1] = real_client_index_2
+    else:
+        real_client_index[0] = real_client_index_2
+        real_client_index[1] = real_client_index_1
+
+    return (real_client_index, int(number_clients_final), True)
 
 
 def filter_clients_same_frequ(data, sorted_data, initial_comb_1):

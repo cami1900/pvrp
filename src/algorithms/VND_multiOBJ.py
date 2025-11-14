@@ -20,13 +20,15 @@ from utils import log_progress
 # Solution_multiOBJ
 #(OBJ_value, dist_value, dissim_value, assigned_ordered_matrix, not_assigned_list, transp_demand_matrix, route_dist_matrix, sim_matrix)
 
+
+
 ''' A-VND '''
 
 
 def AVND_multiOBJ_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
         distance_matrix, distance_matrix_adjusted, closeness_matrix, 
-        current_solution, best_solution, 
+        initial_solution, current_solution, best_solution, 
         time_limit_VND, 
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
@@ -122,7 +124,7 @@ def AVND_multiOBJ_algorithm(
                 define_neighboring_solution(
                     sim_type, weights, neighbour, 
                     n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
-                    current_solution, neigh_order, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
+                    initial_solution, current_solution, neigh_order, clients_NO_max_frequ) # ho rimosso clients_NO_max_frequ
             
             if error_index == False:    # solution has not been defined
                 reward_points += rewards_values[3]
@@ -541,7 +543,10 @@ def VND_algorithm(
 
 ''' NEIGHBORHOODS '''
 
-def define_neighboring_solution(sim_type, weights, neighbour, n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, current_solution, neigh_order, clients_NO_max_frequ):
+def define_neighboring_solution(
+        sim_type, weights, neighbour, 
+        n_vehicles, n_days, vehicle_capacity, data, sorted_data, distance_matrix, closeness_matrix, 
+        initial_solution, current_solution, neigh_order, clients_NO_max_frequ):
 
     ''' step 1'''
     # define the main combination --> initial_comb, final_comb
@@ -586,7 +591,7 @@ def define_neighboring_solution(sim_type, weights, neighbour, n_vehicles, n_days
         new_solution = do_operation(
             sim_type, weights, neighbour, neigh_order, 
             n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-            current_solution, initial_comb_main, final_comb_main, linked_combinations)
+            initial_solution, current_solution, initial_comb_main, final_comb_main, linked_combinations)
         # print("schedule feasible: OP --> END!")
         return (initial_comb_main, final_comb_main, new_solution, True)
         # (END)
@@ -595,7 +600,7 @@ def define_neighboring_solution(sim_type, weights, neighbour, n_vehicles, n_days
     new_solution = do_operation(
         sim_type, weights, neighbour, neigh_order, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb_main, final_comb_main, linked_combinations)
+        initial_solution, current_solution, initial_comb_main, final_comb_main, linked_combinations)
     # print("schedule unfeasible: OP + algoritmo")
     # print("CURRENT SOLUTION")
     # client_combos = find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, current_solution, initial_comb_main)
@@ -667,6 +672,7 @@ def define_neighboring_solution(sim_type, weights, neighbour, n_vehicles, n_days
         distance_matrix=distance_matrix, 
         closeness_matrix=closeness_matrix, 
         new_solution=new_solution,
+        initial_solution=initial_solution,
         current_solution=current_solution,
         selected_combinations=selected_combinations, 
         linked_combinations=linked_combinations, 
@@ -957,7 +963,14 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         schedule_i = np.zeros(n_days)
         schedule_i[day_i] = 1
 
-        initial_comb_1 = Move_combination('initial', vehicle_i, day_i, schedule_i, real_client_index_1)
+        client_list_1 = current_solution.assigned_ordered_matrix[vehicle_i, day_i]
+        start_idx = np.where(client_list_1 == real_client_index_1[0])[0][0]
+        end_idx   = np.where(client_list_1 == real_client_index_1[1])[0][0]
+        if start_idx > end_idx:
+            start_idx, end_idx = end_idx, start_idx
+        set_cliens_index_1 = client_list_1[start_idx : end_idx + 1]
+
+        initial_comb_1 = Move_combination('initial', vehicle_i, day_i, schedule_i, set_cliens_index_1)
         
         # Initial combination 2:
         if n_vehicles == 1:
@@ -969,7 +982,14 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
             initial_comb = 0
             return (initial_comb, False)
 
-        initial_comb_2 = Move_combination('initial_2', vehicle_i2, day_i, schedule_i, real_client_index_2)
+        client_list_2 = current_solution.assigned_ordered_matrix[vehicle_i2, day_i]
+        start_idx = np.where(client_list_2 == real_client_index_2[0])[0][0]
+        end_idx   = np.where(client_list_2 == real_client_index_2[1])[0][0]
+        if start_idx > end_idx:
+            start_idx, end_idx = end_idx, start_idx
+        set_cliens_index_2 = client_list_2[start_idx : end_idx + 1]
+
+        initial_comb_2 = Move_combination('initial_2', vehicle_i2, day_i, schedule_i, set_cliens_index_2)
 
         # Initial combination (comb. 1 and comb.2):
         initial_comb_main = SwapCombination('initial', initial_comb_1, initial_comb_2)
@@ -1192,12 +1212,33 @@ def check_capacity_op(vehicle_capacity, data, neighbour, neigh_order, current_so
         
         if new_capacity_1 > vehicle_capacity or new_capacity_2 > vehicle_capacity:
             return (False)
+    #
     # t_swap_r_k
     elif neigh_order[neighbour] == "t_swap_r_k":
         return(True)
+    
+    #    ''' MULTI SWAP '''
+    #
+    # t_multiswap_k
+    elif neigh_order[neighbour] == "t_multiswap_k":
 
+        # comb_1
+        start_capacity_1 = current_solution.transp_demand_matrix[final_comb_main.comb_1.vehicle, final_comb_main.comb_1.day]
+        demand_clients_1 = 0
+        for cl in initial_comb_main.comb_1.client:
+            demand_clients_1 += data[cl, conf.DEMAND_INDEX]
 
-    # if neigh_order[neighbour] == "t_multiswap_k"???????????????????
+        # comb_2   
+        start_capacity_2 = current_solution.transp_demand_matrix[final_comb_main.comb_2.vehicle, final_comb_main.comb_2.day]
+        demand_clients_2 = 0
+        for cl in initial_comb_main.comb_2.client:
+            demand_clients_2 += data[cl, conf.DEMAND_INDEX]
+
+        new_capacity_1 = start_capacity_1 - demand_clients_2 + demand_clients_1
+        new_capacity_2 = start_capacity_2 - demand_clients_1 + demand_clients_2
+
+        if new_capacity_1 > vehicle_capacity or new_capacity_2 > vehicle_capacity:
+            return (False)
 
     return(True)
     
@@ -1349,7 +1390,7 @@ def do_operation_OLD(sim_type, weights, neighbour, neigh_order, n_vehicles, n_da
 
 
 def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-                 current_solution, initial_comb, final_comb, linked_combinations):
+                 initial_solution, current_solution, initial_comb, final_comb, linked_combinations):
     
     #    ''' MOVE '''
     if (neigh_order[neighbour] == "k_move_t" or 
@@ -1358,7 +1399,10 @@ def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, 
         neigh_order[neighbour] == "move_t"):
 
         # New solution:
-        new_solution = move_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)
+        new_solution = move_operation(
+            sim_type, weights, 
+            n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+            initial_solution, current_solution, initial_comb, final_comb)
         
 
     #    ''' SWAP 1x1 '''
@@ -1368,24 +1412,40 @@ def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, 
         neigh_order[neighbour] == "swap_t"):
 
         # New solution:
-        new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)    
+        new_solution = swap_operation(
+            sim_type, weights, 
+            n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+            initial_solution, current_solution, initial_comb, final_comb)    
 
     # t_swap_r_k
     elif neigh_order[neighbour] == "t_swap_r_k":
 
         # New solution:
-        new_solution = t_swap_r_k(sim_type, weights, n_days, n_vehicles, current_solution, initial_comb, final_comb)
+        new_solution = t_swap_r_k(
+            sim_type, weights, 
+            n_days, n_vehicles, 
+            initial_solution, current_solution, initial_comb, final_comb)
    
-
+    # f_swap_kt and f_swap_t
     elif (neigh_order[neighbour] == "f_swap_kt" or 
           neigh_order[neighbour] == "f_swap_t"):
 
         # New solution:
         new_solution = f_swap_operation(sim_type, weights, neigh_order, neighbour, 
                                         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-                                        current_solution, initial_comb, final_comb, 
+                                        initial_solution, current_solution, initial_comb, final_comb, 
                                         linked_combinations) 
 
+    #    ''' MULTI SWAP '''
+    #
+    # t_multiswap_k
+    elif neigh_order[neighbour] == "t_multiswap_k":
+
+        # New solution:
+        new_solution = muliswap_operation(
+            sim_type, weights, 
+            n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+            initial_solution, current_solution, initial_comb, final_comb)
     
     return new_solution
 
@@ -1393,7 +1453,7 @@ def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, 
 def move_operation(
         sim_type, weights, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb, final_comb):
+        initial_solution, current_solution, initial_comb, final_comb):
 
     # creation of new_solution class attributes 
     (new_OBJ_value, new_tot_dist, new_sim_value, 
@@ -1467,11 +1527,11 @@ def move_operation(
             final_comb.vehicle, final_comb.day)
 
         new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-            measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
 
     
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
@@ -1491,7 +1551,7 @@ def move_operation(
 def swap_operation(
         sim_type, weights, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb, final_comb):
+        initial_solution, current_solution, initial_comb, final_comb):
 
     '''creation of new_Solution class attributes'''
     (new_OBJ_value, new_tot_dist, new_sim_value, 
@@ -1578,10 +1638,10 @@ def swap_operation(
             final_comb.comb_2.vehicle, final_comb.comb_2.day)
 
         new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-            measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
     
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
@@ -1601,7 +1661,7 @@ def swap_operation(
 def f_swap_operation(
         sim_type, weights, neigh_order, neighbour,
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb, final_comb, 
+        initial_solution, current_solution, initial_comb, final_comb, 
         linked_combinations):
     
     # it should be true if clients have same grequency, as they are supposed to have
@@ -1656,18 +1716,97 @@ def f_swap_operation(
                 )
 
         new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-            measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_solution.sim_matrix)
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_solution.sim_matrix)
 
 
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_solution.OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
     return new_solution
 
 
-def t_swap_r_k(sim_type, weights, n_days, n_vehicles, current_solution, initial_comb, final_comb):
+def muliswap_operation(
+        sim_type, weights, 
+        n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+        initial_solution, current_solution, initial_comb, final_comb):
+
+    '''creation of new_Solution class attributes'''
+    (new_OBJ_value, new_tot_dist, new_sim_value, 
+     new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, 
+     new_sim_matrix) = \
+        crete_new_sol_attributes(current_solution)
+    
+    '''Remove and add client to the Assigned customer matrix and the Transported demand matrix'''
+    for cl_1 in initial_comb.comb_1.client:
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = \
+            remove_client(data,new_assigned_ordered_matrix, new_transp_demand_matrix, 
+                            initial_comb.comb_1.day, initial_comb.comb_1.vehicle, cl_1)
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = \
+            add_client(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
+                        final_comb.comb_1.day, final_comb.comb_1.vehicle, cl_1)
+    for cl_2 in initial_comb.comb_2.client:
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = \
+            remove_client(data,new_assigned_ordered_matrix, new_transp_demand_matrix, 
+                            initial_comb.comb_2.day, initial_comb.comb_2.vehicle, cl_2)
+        (new_assigned_ordered_matrix, new_transp_demand_matrix) = \
+            add_client(data, new_assigned_ordered_matrix, new_transp_demand_matrix, 
+                        final_comb.comb_2.day, final_comb.comb_2.vehicle, cl_2)
+
+    ''' Reorganize the clients (best route) and update the Route distances matrix '''
+    (new_route_dist_matrix, new_assigned_ordered_matrix) = \
+        optimize_single_route(
+            n_vehicles, n_days, distance_matrix, closeness_matrix, 
+            new_route_dist_matrix, new_assigned_ordered_matrix, 
+            final_comb.comb_1.vehicle, final_comb.comb_1.day)
+    
+    (new_route_dist_matrix, new_assigned_ordered_matrix) = \
+        optimize_single_route(
+            n_vehicles, n_days, distance_matrix, closeness_matrix, 
+            new_route_dist_matrix, new_assigned_ordered_matrix, 
+            final_comb.comb_2.vehicle, final_comb.comb_2.day)
+    
+    new_tot_dist = calculate_tot_dist (n_vehicles, n_days, new_route_dist_matrix)
+
+    ''' Update similarity matrix and calculate similarity value '''
+    if sim_type in ["sim_1", "sim_2", "sim_3"]:
+        _, update_func, measure_func = get_sim_functions(sim_type, sim_calc)
+
+        new_sim_matrix = update_func(n_days,
+            new_assigned_ordered_matrix, new_sim_matrix, 
+            final_comb.comb_1.vehicle, final_comb.comb_1.day)
+        new_sim_matrix = update_func(n_days,
+            new_assigned_ordered_matrix, new_sim_matrix, 
+            final_comb.comb_2.vehicle, final_comb.comb_2.day)
+
+        new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
+    
+    ''' Calculate OBJ value '''
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
+    new_dissim_value  = 1-new_sim_value
+    new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
+
+    # print(f"\n\n*******************")
+    # print(f"current_solution.tot_dist: {current_solution.tot_dist}")
+    # print("new_tot_dist:", new_tot_dist)
+    # print("new_dist_value:", new_dist_value)
+    # print("new_sim_value:", new_sim_value)
+    # print("new_dissim_value:", new_dissim_value)
+    # print("new_OBJ_value:", new_OBJ_value)
+    # print("*******************\n\n")
+
+    # Save new solution:
+    new_solution = Solution_multiOBJ(
+        float(new_OBJ_value), new_tot_dist, float(new_sim_value), 
+        new_assigned_ordered_matrix, new_not_assigned_list, new_transp_demand_matrix, new_route_dist_matrix, 
+        new_sim_matrix)
+    
+    return new_solution
+
+
+def t_swap_r_k(sim_type, weights, n_days, n_vehicles, initial_solution, current_solution, initial_comb, final_comb):
 
     vehicle_i = initial_comb.comb_1.vehicle
     day_i = initial_comb.comb_1.day
@@ -1733,13 +1872,13 @@ def t_swap_r_k(sim_type, weights, n_days, n_vehicles, current_solution, initial_
                 vehicle_f, day_i)
 
             new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-                measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+                measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
     
     else:
         return (current_solution)
 
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
@@ -1970,7 +2109,7 @@ def def_selected_combinations(neigh_order, neighbour, n_days, selected_schedule,
 
 def complete_new_solution(sim_type, weights, neigh_order, neighbour, 
                           data, n_vehicles, n_days, distance_matrix, closeness_matrix, 
-                          new_solution, current_solution, selected_combinations, linked_combinations, initial_comb):
+                          new_solution, initial_solution, current_solution, selected_combinations, linked_combinations, initial_comb):
 
     new_assigned_ordered_matrix = new_solution.assigned_ordered_matrix
     new_transp_demand_matrix = new_solution.transp_demand_matrix
@@ -2103,7 +2242,7 @@ def complete_new_solution(sim_type, weights, neigh_order, neighbour,
                         comb_vehicle, comb_day )
 
             new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-                measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_solution.sim_matrix)
+                measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_solution.sim_matrix)
 
     #    ''' SWAP 1x1 '''
     elif (neigh_order[neighbour] == "k_swap_t" or 
@@ -2160,7 +2299,7 @@ def complete_new_solution(sim_type, weights, neigh_order, neighbour,
 
     
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_solution.OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
@@ -2233,7 +2372,7 @@ def pick_client(current_solution, vehicle_i, day_i, clients_filtred, avoid_clien
     return (real_client_index, True)
 
 
-def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
+def pick_set_clients_OLD(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
 
     client_list = copy.copy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
     # remove zeros:
@@ -2289,6 +2428,75 @@ def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_f
         real_client_index[0] = real_client_index_2
 
     return (real_client_index, number_clients, True)
+
+
+def pick_set_clients(n_days, data, current_solution, vehicle_i, day_i, clients_filtred, number_clients):
+    # copia e rimuove zeri
+    client_list = copy.copy(current_solution.assigned_ordered_matrix[vehicle_i, day_i])
+    client_list = client_list[client_list != 0]
+
+    # se lista vuota
+    if client_list.size == 0:
+        return (0, 0, False)
+
+    # pick random client #1
+    real_client_index_1 = int(random.choice(client_list))
+    where_cl1 = int(np.where(client_list == real_client_index_1)[0][0])
+    n_clients = len(client_list)
+
+    # se number_clients == 0 -> prendi qualsiasi altro cliente
+    if number_clients == 0:
+        if n_clients == 1:
+            return (0, 0, False)
+        others = client_list[client_list != real_client_index_1]
+        real_client_index_2 = int(random.choice(others))
+        where_cl2 = int(np.where(client_list == real_client_index_2)[0][0])
+    else:
+        # vogliamo che la dimensione del blocco sia in [number_clients-1, number_clients+1]
+        candidate_clients = []
+
+        for k in (number_clients - 1, number_clients, number_clients + 1):
+            if k < 1:
+                continue
+            step = k - 1  # se la lunghezza è k, la distanza in indici è k-1
+            # indice a sinistra
+            idx_left = where_cl1 - step
+            if 0 <= idx_left < n_clients and idx_left != where_cl1:
+                candidate_clients.append(int(client_list[idx_left]))
+            # indice a destra
+            idx_right = where_cl1 + step
+            if 0 <= idx_right < n_clients and idx_right != where_cl1:
+                candidate_clients.append(int(client_list[idx_right]))
+
+        # rimuovi duplicati
+        candidate_clients = list(dict.fromkeys(candidate_clients))
+
+        # fallback: se non ci sono candidati (bordo estremo o lista corta),
+        # considera tutti i client entro +- (number_clients+1) indici e escludi il primo
+        if not candidate_clients:
+            left = max(0, where_cl1 - (number_clients + 1))
+            right = min(n_clients - 1, where_cl1 + (number_clients + 1))
+            window = [int(x) for i, x in enumerate(client_list[left:right + 1]) if (left + i) != where_cl1]
+            if not window:
+                return (0, 0, False)
+            candidate_clients = window
+
+        real_client_index_2 = int(random.choice(candidate_clients))
+        where_cl2 = int(np.where(client_list == real_client_index_2)[0][0])
+
+    # calcolo numero clienti effettivo (inclusivi)
+    number_clients_final = abs(where_cl1 - where_cl2) + 1
+
+    # ordina in output (prima = inizio, seconda = fine)
+    real_client_index = np.zeros(2, dtype=int)
+    if where_cl1 <= where_cl2:
+        real_client_index[0] = real_client_index_1
+        real_client_index[1] = real_client_index_2
+    else:
+        real_client_index[0] = real_client_index_2
+        real_client_index[1] = real_client_index_1
+
+    return (real_client_index, int(number_clients_final), True)
 
 
 def filter_clients_same_frequ(data, sorted_data, initial_comb_1):
@@ -2363,7 +2571,7 @@ def def_new_schedule(n_days, n_vehicles, data, current_solution, initial_comb_ma
 def move_operation_OLD(
         sim_type, weights, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb, final_comb):
+        initial_solution, current_solution, initial_comb, final_comb):
 
     # creation of new_solution class attributes 
     (new_OBJ_value, new_tot_dist, new_sim_value, 
@@ -2437,11 +2645,11 @@ def move_operation_OLD(
             final_comb.vehicle, final_comb.day)
 
         new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-            measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
 
     
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
@@ -2457,7 +2665,7 @@ def move_operation_OLD(
 def swap_operation_OLD(
         sim_type, weights, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
-        current_solution, initial_comb, final_comb):
+        initial_solution, current_solution, initial_comb, final_comb):
 
     '''creation of new_Solution class attributes'''
     (new_OBJ_value, new_tot_dist, new_sim_value, 
@@ -2544,10 +2752,10 @@ def swap_operation_OLD(
             final_comb.comb_2.vehicle, final_comb.comb_2.day)
 
         new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-            measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_sim_matrix)
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_sim_matrix)
     
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/current_solution.tot_dist
+    new_dist_value = new_tot_dist/initial_solution.tot_dist
     new_dissim_value  = 1-new_sim_value
     new_OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 

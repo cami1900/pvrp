@@ -54,8 +54,8 @@ def main():
 
     # neigh_order = ["k_move_t", "t_move_k", "move_kt", "move_t", 
     #               "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "f_swap_t", "swap_t", 
-    #               "t_swap_r_k"]
-    neigh_order = ["f_swap_kt", "f_swap_t"]
+    #               "t_swap_r_k", "t_multiswap_k"]
+    neigh_order = ["t_multiswap_k"]
 
     # A-VND parameters ---------------------------------- 
     initial_score = 3
@@ -220,18 +220,19 @@ def main():
     OBJ_value = 1.0  
     
     # save solution
-    current_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist, sim_value,
+    initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist, sim_value,
                                                  solution_1.assigned_ordered_matrix, solution_1.not_assigned_list, 
                                                  solution_1.transp_demand_matrix, solution_1.route_dist_matrix,
                                                  sim_matrix)
-    best_solution = copy.deepcopy(current_solution)
+    current_solution = copy.deepcopy(initial_solution)
+    best_solution = copy.deepcopy(initial_solution)
 
     ''' AVND with multi-OBJ '''
 
     (best_solution, solution_history, neigh_out_parameters) = AVND_multiOBJ_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
         distance_matrix, distance_matrix_adjusted, closeness_matrix, 
-        current_solution, best_solution, 
+        initial_solution, current_solution, best_solution, 
         time_limit_VND, 
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
@@ -242,6 +243,10 @@ def main():
     print(f"AVND solution done")
 
     ''' RESULTS '''
+
+    print(f"\n\ncurrent_solution: {current_solution.tot_dist}, {current_solution.sim_value} --> {current_solution.OBJ_value}")
+    print(f"\n\nbest_solution: {best_solution.tot_dist}, {best_solution.sim_value} --> {best_solution.OBJ_value}")
+
 
     # print("all_best_solutions_VND", all_best_solutions_VND)
     # print("best_solution_OBJ", best_solution)
