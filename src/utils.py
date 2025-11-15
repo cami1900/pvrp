@@ -1391,6 +1391,71 @@ def plot_save_iteration_graph(solution_history, graphname_outdir):
     return
 
 
+def plot_save_all_OBJ_iteration_graph(solution_history, graphname_outdir):
+
+    """
+    Crea un grafico dell'andamento della funzione obiettivo per il VND,
+    mostrando OBJ_value, distanza totale e sim_value.
+
+    solution_history = [
+        (
+            best_solution.OBJ_value,     # 0
+            best_solution.tot_dist,      # 1
+            best_solution.sim_value,     # 2
+            current_solution.OBJ_value,  # 3
+            neigh_order[neighbour],      # 4
+            total_run,                   # 5
+            elapsed_time,                # 6
+            *score_neigh                 # 7+
+        ),
+        ...
+    ]
+    """
+
+    obj_values = []
+    dist_values = []
+    sim_values = []
+    iter_total = []
+
+    iter_index = 0
+
+    for repetition in solution_history:
+
+        # Asse X — iterazioni cumulative
+        iter_index += repetition[5]
+        iter_total.append(iter_index)
+
+        # Asse Y — valori da plottare
+        obj_values.append(repetition[0])
+        dist_values.append(repetition[1])
+        sim_values.append(repetition[2])
+
+    # ===== PLOT =====
+    plt.figure(figsize=(17, 6))
+
+    # OBJ value
+    plt.plot(iter_total, obj_values, marker='o', label='OBJ value')
+
+    # Distanza totale
+    plt.plot(iter_total, dist_values, marker='s', label='Total Distance')
+
+    # Similarità
+    plt.plot(iter_total, sim_values, marker='^', label='Similarity Value')
+
+    plt.xlabel('Total Iterations')
+    plt.ylabel('Metrics')
+    plt.title('AVND Multi-Objective Metrics Progression')
+
+    plt.legend()
+    plt.grid(True)
+
+    # Salvataggio del grafico
+    plt.savefig(graphname_outdir, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    return
+
+
 def plot_save_time_graph(solution_history, graphname_outdir):
     """
     Crea un grafico dell'andamento della funzione obiettivo per il VND,

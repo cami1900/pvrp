@@ -30,7 +30,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' SETTINGS -------------------------------------------------------------------------------------------------------'''
 
-MAX_WORKERS = 8     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
+MAX_WORKERS = 4     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
 
 # Directory
 input_dir_base = "data"
@@ -39,7 +39,7 @@ output_dir = "out/results/AVND_multiobj"       # Create new folder to avoid over
 
 # instances
 first_file = 1  #1
-last_file = 32   #32
+last_file = 8   #32
 
 distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
@@ -52,14 +52,14 @@ weights = [0.5, 0.5]
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-time_limit_VND = 60 #(2*60*60)   # 2h*60min*60sec = 7200sec
+time_limit_VND = 1.5*60*60 #(2*60*60)   # 2h*60min*60sec = 7200sec
 max_iteration_neigh = 100
 ws_counter_limit = 20
 worse_sol_percentage = 0.15
 
 # neigh_order = ["k_move_t", "t_move_k", "move_kt", "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "t_swap_r_k", t_multiswap_k"]
-neigh_order = ["k_move_t", "t_move_k", "move_kt", "move_t", 
-               "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "f_swap_t", "swap_t", 
+neigh_order = ["t_move_k", "move_t", 
+               "t_swap_k", "f_swap_t", "swap_t", 
                "t_swap_r_k", "t_multiswap_k"]
 
 # A-VND parameters ---------------------------------- 
@@ -171,7 +171,7 @@ def multi_obj_solver(output_path,
                      n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data, sorted_data,
                      distance_matrix, distance_matrix_adjusted, closeness_matrix,
                      instance_number,
-                     sim_type, weights, solution_1,
+                     sim_type, weights, solution_1, sol_base,
                      path_graph_i_new_opt, path_graph_t_new_opt,
                      path_img_v_new_opt, path_img_d_new_opt):
 
@@ -191,20 +191,25 @@ def multi_obj_solver(output_path,
     if sim_type in ["sim_1", "sim_2", "sim_3"]:
         def_funcs, update_func, measure_func = get_sim_functions(sim_type, sim_calc)
 
-        sim_matrix = def_funcs(n_vehicles, n_days, solution_1.assigned_ordered_matrix)
+        sim_matrix_new = def_funcs(n_vehicles, n_days, solution_1.assigned_ordered_matrix)
+        sim_matrix_base = def_funcs(n_vehicles, n_days, sol_base.assigned_ordered_matrix)
         
     # Calculate OBJ value 
-    tot_dist = solution_1.OBJ_tot_dist
+    tot_dist_new = solution_1.OBJ_tot_dist
+    tot_dist_base = sol_base.OBJ_tot_dist
     sim_value  = 1.0
     OBJ_value = 1.0  
     
     # save solution
-    initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist, sim_value,
+    initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_base, sim_value,
+                                                 sol_base.assigned_ordered_matrix, sol_base.not_assigned_list, 
+                                                 sol_base.transp_demand_matrix, sol_base.route_dist_matrix,
+                                                 sim_matrix_base)
+    current_solution = initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_new, sim_value,
                                                  solution_1.assigned_ordered_matrix, solution_1.not_assigned_list, 
                                                  solution_1.transp_demand_matrix, solution_1.route_dist_matrix,
-                                                 sim_matrix)
-    current_solution = copy.deepcopy(initial_solution)
-    best_solution = copy.deepcopy(initial_solution)
+                                                 sim_matrix_new)
+    best_solution = copy.deepcopy(current_solution)
 
 
     ''' AVND with multi-OBJ '''
@@ -229,7 +234,7 @@ def multi_obj_solver(output_path,
     with open(output_path, 'w') as f:
         f.write(solution_txt)
 
-    utils.plot_save_iteration_graph(solution_history, path_graph_i_new_opt)
+    utils.plot_save_all_OBJ_iteration_graph(solution_history, path_graph_i_new_opt) # plot_save_all_OBJ_iteration_graph or plot_save_iteration_graph
     utils.plot_save_time_graph(solution_history, path_graph_t_new_opt)
 
     utils.plot_save_vehi_routes(n_vehicles, n_days, data, solution_1.assigned_ordered_matrix, path_img_v_new_opt)
@@ -351,10 +356,10 @@ def instance_solver(filename):
         path_img_d_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + "_img_bt" + ".jpg")
 
         multi_obj_solver(path_results_new_opt,
-                     n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data, sorted_data,
+                     n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data_new, sorted_data_new,
                      distance_matrix, distance_matrix_adjusted, closeness_matrix,
                      instance_number,
-                     sim_type, weights, sol_new,
+                     sim_type, weights, sol_new, sol_base,
                      path_graph_i_new_opt, path_graph_t_new_opt,
                      path_img_v_new_opt, path_img_d_new_opt)
 
@@ -363,7 +368,7 @@ def instance_solver(filename):
             print(sol_new.strip())
             return  # <-- fermati, non calcolare la similarità
         
-        path_results_similarity = os.path.join(output_dir_instance, filename + "_" + sim_type + ".txt")
+        path_results_similarity = os.path.join(output_dir_instance, filename + "_all_sim_" + sim_type + ".txt")
 
         ''' SIMILARITY '''
         # Solve similarity

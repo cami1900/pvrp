@@ -102,7 +102,7 @@ def AVND_multiOBJ_algorithm(
 
         ''' choose neighborhood '''
         neighbour = choose_neigh(probability_neigh, neigh_order)
-        print(f"\n*****************\nneighbour: {neigh_order[neighbour]}\n*****************\n")
+        # print(f"\n*****************\nneighbour: {neigh_order[neighbour]}\n*****************\n")
 
         ''' run neighborhood '''
         iteration = 0
@@ -280,7 +280,7 @@ def AVND_multiOBJ_algorithm(
 
 
         ''' ROUTE OPTIMIZER -----------------------------------------------'''
-        print(f"\n*****************\nneighbour: 2-3-opt \n*****************\n")
+        # print(f"\n*****************\nneighbour: 2-3-opt \n*****************\n")
         new_solution = opt_2_3_operation(sim_type, weights, n_vehicles, n_days, n_clients, max_clients_kd, distance_matrix, 
                                          initial_solution, current_solution)
         
@@ -1838,18 +1838,18 @@ def f_swap_operation(
         new_solution = 0
         return (False, new_solution)
 
-    print(f"before:\n {current_solution.assigned_ordered_matrix}")
+    # print(f"before:\n {current_solution.assigned_ordered_matrix}")
 
     ''' Main operation '''
     new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, initial_solution, current_solution, initial_comb, final_comb)    
 
-    print("after main operation:\n", new_solution.assigned_ordered_matrix)
+    # print("after main operation:\n", new_solution.assigned_ordered_matrix)
 
     ''' Linked combinations '''
     # remove:
     new_solution = remove_linked_comb(data, neigh_order, neighbour, initial_comb, final_comb, new_solution, linked_combinations)
     
-    print("after removing linked combo:\n", new_solution.assigned_ordered_matrix)
+    # print("after removing linked combo:\n", new_solution.assigned_ordered_matrix)
 
     # add clients of selected combos
     for comb_vehicle, comb_day in linked_combinations[1]:
@@ -1861,7 +1861,7 @@ def f_swap_operation(
                 add_client(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
                            comb_day, comb_vehicle, initial_comb.comb_2.client)
     
-    print("after adding linked combo:\n", new_solution.assigned_ordered_matrix)
+    # print("after adding linked combo:\n", new_solution.assigned_ordered_matrix)
     
     # optimize routes
     for comb_vehicle, comb_day in linked_combinations[0]:
