@@ -100,6 +100,15 @@ class Solution:
             print("verif_dist:", self.verif_dist)
             print("verif_load:", self.verif_load)
 
+        def verify(self):
+            if self.verif_dist == 1 and self.verif_load == 1:
+                return True 
+            else:
+                return False
+
+
+
+
 class Solution_multiOBJ:
     def __init__(self, 
                  OBJ_value : float, 
@@ -175,6 +184,14 @@ class Solution_multiOBJ:
             print("\nThe verification vector of the solution is:")
             print("verif_dist:", self.verif_dist)
             print("verif_load:", self.verif_load)
+        
+        def verify(self):
+            if self.verif_dist == 1 and self.verif_load == 1:
+                return True 
+            else:
+                return False
+
+
 
 
 class Move_combination:

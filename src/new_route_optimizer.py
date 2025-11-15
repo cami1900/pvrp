@@ -134,7 +134,7 @@ def three_opt(original_route, original_distance, distance_matrix):
     return best_route, best_distance
 
 ''' optimize routes '''
-def optimize_route(n_vehicles, n_days, distance_matrix, solution):
+def optimize_route(n_vehicles, n_days, distance_matrix, solution, counter):
 
     new_solution = copy.deepcopy(solution)
     for vehicle in range(n_vehicles):
@@ -150,27 +150,34 @@ def optimize_route(n_vehicles, n_days, distance_matrix, solution):
             best_3opt, dist_3opt = three_opt(original_route, original_distance, distance_matrix)
             # 2-opt + 3-opt
             best_2_3opt, dist_2_3opt = three_opt(best_2opt, dist_2opt, distance_matrix)
-            best_3_2opt, dist_3_2opt = three_opt(best_3opt, dist_3opt, distance_matrix)
+            best_3_2opt, dist_3_2opt = two_opt(best_3opt, dist_3opt, distance_matrix)
             # print("dist_2opt", dist_2opt)
             # print("dist_3opt", dist_3opt)
             # print("dist_2_3opt", dist_2_3opt)
             # print("dist_3_2opt", dist_3_2opt)
             update_score_table(original_distance, dist_2opt, dist_3opt, dist_2_3opt, dist_3_2opt)
 
+            tol = 1.0
+            counter[3] += 1
             if dist_2_3opt < original_distance or dist_3_2opt < original_distance:
-                if dist_2_3opt < dist_3_2opt:   # dist_2_3opt better
-                    # print("dist_2_3opt")
-                    # print(f"original: {original_route}, \noptimized: {best_2_3opt}")
-                    # print(f"original: {original_distance}, optimized: {dist_2_3opt}")
+                counter[4] += 1
+
+                if dist_2_3opt + tol < dist_3_2opt:       # dist_2_3opt better
+                    counter[0] += 1
                     for client in range(len(best_2_3opt)):
                         new_solution.assigned_ordered_matrix[vehicle][day][client] = best_2_3opt[client]
                     new_solution.route_dist_matrix[vehicle][day] = dist_2_3opt
-                    # print(new_solution.route_dist_matrix[vehicle][day])
-                else:                           # dist_3_2opt better
-                    # print("dist_3_2opt")
+
+                elif dist_3_2opt + tol <  dist_2_3opt:    # dist_3_2opt better
+                    counter[1] += 1
+                    
                     for client in range(len(best_3_2opt)):
                         new_solution.assigned_ordered_matrix[vehicle][day][client] = best_3_2opt[client]
                     new_solution.route_dist_matrix[vehicle][day] = dist_3_2opt
+
+                else:
+                    counter[2] += 1
+
 
     return new_solution
 
@@ -517,6 +524,7 @@ def check_solution(data, n_vehicles, n_days, solution):
 
 def main():
 
+    counter = np.zeros(5, dtype=int)
     instance_files = [f"p{str(i).zfill(2)}.txt" for i in range(1, 32+1)]
 
     for fname in instance_files:
@@ -526,7 +534,6 @@ def main():
             continue
 
         print(f"\n\n=== Running instance {file_path} ===")
-        distance_type = 1
     
         '''DATA PREPARATION'''
         distance_type = 1
@@ -552,7 +559,7 @@ def main():
         ''' OPTMIZED SOLUTION '''
 
         ''' optimize route '''
-        solution_1 = optimize_route(n_vehicles, n_days, distance_matrix, solution_0)
+        solution_1 = optimize_route(n_vehicles, n_days, distance_matrix, solution_0, counter)
 
         solution_1.OBJ_tot_dist = 0
         (OBJ_tot_dist_optimized) = calculate_tot_dist(n_vehicles, n_days, solution_1.route_dist_matrix, solution_1.OBJ_tot_dist)
@@ -560,6 +567,14 @@ def main():
         # print("optimized_tot_dist:", OBJ_tot_dist_optimized)
         # print("\n\n")
 
+    print("\n\n****************************************")
+    print(f"total runs: {counter[3]} times")
+    print(f"better solution: {counter[4]} times")
+    print(f"2-3 opt is better: {counter[0]} times")
+    print(f"3-2 opt is better: {counter[1]} times")
+    print(f"solutions are equal: {counter[2]} times")
+    print("****************************************\n\n")
+   
     # crea DataFrame con i risultati cumulativi
     df = pd.DataFrame(
         score_table_global,

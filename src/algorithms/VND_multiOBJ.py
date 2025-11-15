@@ -24,7 +24,6 @@ from utils import log_progress
 
 ''' A-VND '''
 
-
 def AVND_multiOBJ_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
         distance_matrix, distance_matrix_adjusted, closeness_matrix, 
@@ -103,7 +102,7 @@ def AVND_multiOBJ_algorithm(
 
         ''' choose neighborhood '''
         neighbour = choose_neigh(probability_neigh, neigh_order)
-        # print("neighbour", neighbour)
+        print(f"\n*****************\nneighbour: {neigh_order[neighbour]}\n*****************\n")
 
         ''' run neighborhood '''
         iteration = 0
@@ -276,11 +275,41 @@ def AVND_multiOBJ_algorithm(
             # time.sleep(1)
 
         ''' print message '''
-        # print(f"p{instance_number}: best OBJ = {best_solution.OBJ_value}")    
+        # print(f"p{instance_number}: best OBJ = {best_solution.OBJ_value}") 
+    
+
+
+        ''' ROUTE OPTIMIZER -----------------------------------------------'''
+        print(f"\n*****************\nneighbour: 2-3-opt \n*****************\n")
+        new_solution = opt_2_3_operation(sim_type, weights, n_vehicles, n_days, n_clients, max_clients_kd, distance_matrix, 
+                                         initial_solution, current_solution)
+        
+        ''' feasibility check '''
+        # verify is new solution is feasible
+        V_distances_matrix, V_loads_matrix, new_solution = \
+            algorithms.feasibility_function_POOP.check_feasibility_pvrp(
+                n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
+        if new_solution.feasibility_vector.verify() == True:
+            if new_solution.verification_vector.verify() != True:
+                print("VERIFICATION VECTOR =", new_solution.verification_vector.__dict__, flush=True)
+                raise RuntimeError("❌ ERRORE: new_solution non è verificata correttamente. Algoritmo interrotto.")
+
+            ''' verify NS status '''
+            # if NS is better than BS (0):
+            if new_solution.OBJ_value < best_solution.OBJ_value: 
+
+                # udate best solution
+                best_solution = copy.deepcopy(new_solution)
+                current_solution = copy.deepcopy(new_solution)
+
+            # if NS in better than CS (1):
+            elif new_solution.OBJ_value < current_solution.OBJ_value: 
+               
+                # udate current solution
+                current_solution = copy.deepcopy(new_solution)
+
 
     return (best_solution, solution_history, neigh_out_parameters)
-
-
 
 # FUNCTIONS:
 
@@ -299,7 +328,6 @@ def choose_neigh(probability_neigh, neigh_order):
 
 
 ''' M-VND '''
-
 
 def MVND_algorithm(worse_sol_acc_VND, neigh_order, max_neighbour, max_iteration_neigh, two_opt_iteration, worse_sol_percentage,
                    start_time_VND, time_limit_VND, time_limit_neigh,
@@ -358,7 +386,6 @@ def MVND_algorithm(worse_sol_acc_VND, neigh_order, max_neighbour, max_iteration_
 
 
 ''' BASE VND '''
-
 
 def VND_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, distance_matrix, distance_matrix_adjusted, closeness_matrix, 
@@ -459,9 +486,9 @@ def VND_algorithm(
         # if a worse solution can be accepted:
         ws_neigh = random.randrange(0, max_neighbour+1)
         if worse_sol_acceptance == True and neighbour == ws_neigh:
-            OBJ_limit_value = (current_solution.OBJ_tot_dist + worse_sol_percentage * current_solution.OBJ_tot_dist)
+            OBJ_limit_value = (current_solution.OBJ_value + worse_sol_percentage * current_solution.OBJ_tot_dist)
 
-            if new_solution.OBJ_tot_dist < OBJ_limit_value:
+            if new_solution.OBJ_value < OBJ_limit_value:
                 # verify is new solution is feasible
                 V_distances_matrix, V_loads_matrix, new_solution = \
                     algorithms.feasibility_function_POOP.check_feasibility_pvrp(
@@ -498,7 +525,7 @@ def VND_algorithm(
             
         ''' better solution acceptance criteria '''
         # if the OBJ of new solution is better than the one of current solution and feasible, update current solution: 
-        if new_solution.OBJ_tot_dist < current_solution.OBJ_tot_dist:
+        if new_solution.OBJ_value < current_solution.OBJ_tot_dist:
 
             print("better OBJ value found")
 
@@ -575,6 +602,7 @@ def define_neighboring_solution(
 
     capacity_index = check_capacity_op(vehicle_capacity, data, neighbour, neigh_order, current_solution, initial_comb_main, final_comb_main)
     if capacity_index == False:
+        # print("there is NOT enough capacity")
         new_solution = 0
         return (initial_comb_main, final_comb_main, new_solution, False)
 
@@ -685,7 +713,148 @@ def define_neighboring_solution(
     return (initial_comb_main, final_comb_main, new_solution, True)
 
 
-# MAIN FUNCTIONS
+''' 2-opt '''
+def two_opt(original_route, original_distance, distance_matrix):
+    """Applica l'algoritmo 2-opt per ottimizzare la route (il deposito resta fisso)."""
+    best_route = original_route.copy()
+    best_distance = original_distance.copy()
+    # improved = True
+
+    # while improved:
+    #     improved = False
+    for i in range(1, len(original_route) - 2):
+        for j in range(i + 1, len(original_route) - 1):
+            # Genera una nuova route invertendo il segmento [i:j]
+            new_route = original_route.copy()
+            new_route[i:j+1] = original_route[j:i-1:-1]
+            new_distance = sum(distance_matrix[new_route[cl], new_route[cl + 1]] for cl in range(len(new_route) - 1))
+            # new_distance = route_distance(distance_matrix, new_route)
+            if new_distance < best_distance:
+                best_route = new_route
+                best_distance = new_distance
+                # improved = True
+
+    return best_route, best_distance
+
+''' 3-opt '''
+def three_opt(original_route, original_distance, distance_matrix):
+    """Applica l'algoritmo 2-opt per ottimizzare la route (il deposito resta fisso)."""
+    best_route = original_route.copy()
+    best_distance = original_distance.copy()
+
+    seen_routes = {tuple(original_route)}  # la route iniziale
+    new_routes = []
+
+    # improved = True
+
+    # while improved:
+    #     improved = False
+    for i in range(1, len(original_route) - 3):
+        for j in range(i + 1, len(original_route) - 2):
+            for k in range(j + 1, len(original_route) - 1):
+                segments = [
+                    original_route[0:i],
+                    original_route[i:j],
+                    original_route[j:k],
+                    original_route[k:]
+                ]
+
+                # Tutte le possibili combinazioni (alcune inversioni)    
+                options = [
+                    np.concatenate([segments[0], segments[1], segments[2], segments[3]]),
+                    np.concatenate([segments[0], segments[1][::-1], segments[2], segments[3]]),
+                    np.concatenate([segments[0], segments[1], segments[2][::-1], segments[3]]),
+                    np.concatenate([segments[0], segments[1][::-1], segments[2][::-1], segments[3]]),
+                    np.concatenate([segments[0], segments[2], segments[1], segments[3]]),
+                    np.concatenate([segments[0], segments[2], segments[1][::-1], segments[3]]),
+                    np.concatenate([segments[0], segments[2][::-1], segments[1], segments[3]]),
+                    np.concatenate([segments[0], segments[2][::-1], segments[1][::-1], segments[3]])
+                ]
+
+                unique_options = []
+                for opt in options:
+                    t = tuple(opt)
+                    if t not in seen_routes:
+                        seen_routes.add(t)
+                        unique_options.append(opt)
+                        new_routes.append(opt)
+                
+                for new_route in unique_options:
+                        new_distance = sum(distance_matrix[new_route[cl], new_route[cl + 1]] for cl in range(len(new_route) - 1))
+                        # new_distance = route_distance(distance_matrix, new_route)
+                        if new_distance < best_distance:
+                            best_route = new_route
+                            best_distance = new_distance
+                            # improved = True
+
+    return best_route, best_distance
+
+''' optimize routes '''
+def optimize_route(sim_type, n_vehicles, n_days, n_clients, max_clients_kd, distance_matrix, solution):
+
+    new_solution = crete_new_sol_empty(sim_type, n_vehicles, n_days, n_clients, max_clients_kd)
+    new_solution.transp_demand_matrix = solution.transp_demand_matrix
+
+    for vehicle in range(n_vehicles):
+        for day in range(n_days):
+            
+            route = copy.deepcopy(solution.assigned_ordered_matrix[vehicle][day])
+            idx = np.where(route == 0)[0][2]    # remove final zeros
+            original_route = route[:idx]
+            original_distance = copy.deepcopy(solution.route_dist_matrix[vehicle][day])
+            # original_distance = route_distance(distance_matrix, original_route)
+            
+            ''' optmize '''
+            # 2-opt
+            best_2opt, dist_2opt = two_opt(original_route, original_distance, distance_matrix)
+            # 2-opt + 3-opt
+            best_2_3opt, dist_2_3opt = three_opt(best_2opt, dist_2opt, distance_matrix)
+          
+            # verify is is better
+            if dist_2_3opt < original_distance:
+                # print(f"\nv{vehicle}-d{day}, better route found")
+                # print("original:", original_route)
+                # print("new:", best_2_3opt)
+                # update solution
+                # for client in range(len(best_2_3opt)):
+                #     new_solution.assigned_ordered_matrix[vehicle][day][client] = best_2_3opt[client]
+                new_solution.assigned_ordered_matrix[vehicle][day][0:len(best_2_3opt)] = best_2_3opt
+                new_solution.route_dist_matrix[vehicle][day] = dist_2_3opt
+            else:
+                # print(f"\nv{vehicle}-d{day}, NO improvement")
+                new_solution.assigned_ordered_matrix[vehicle][day][0:len(original_route)] = original_route
+                new_solution.route_dist_matrix[vehicle][day] = original_distance
+
+    return new_solution
+
+''' 2-3-opt neighbourhood '''
+def opt_2_3_operation(sim_type, weights, n_vehicles, n_days, n_clients, max_clients_kd, distance_matrix, initial_solution, solution):
+    
+    # New solution:     only ruotes and distances hav been updated
+    new_solution = optimize_route(sim_type, n_vehicles, n_days, n_clients, max_clients_kd, distance_matrix, solution)
+
+    # Calculate tot_dist
+    new_solution.tot_dist = calculate_tot_dist (n_vehicles, n_days, new_solution.route_dist_matrix)
+
+    # Update similarity matrix and calculate similarity value 
+    if sim_type in ["sim_1", "sim_2", "sim_3"]:
+        def_funcs, _, measure_func = get_sim_functions(sim_type, sim_calc)
+
+        new_solution.sim_matrix = def_funcs(n_vehicles, n_days,
+            new_solution.assigned_ordered_matrix)
+
+        new_solution.sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
+            measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_solution.sim_matrix)
+        
+    ''' Calculate OBJ value '''
+    new_dist_value = new_solution.tot_dist/initial_solution.tot_dist
+    new_dissim_value  = 1 - new_solution.sim_value
+    new_solution.OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
+
+    return new_solution
+
+
+''' MAIN FUNCTIONS '''
 
 
 def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_solution, neigh_order, clients_NO_max_frequ):
@@ -813,9 +982,9 @@ def def_initial_comb(neighbour, n_vehicles, n_days, data, sorted_data, current_s
         if n_vehicles == 1:
             initial_comb_main = 0
             return (initial_comb_main, False)
-        print("n_days:", n_days)
-        print("initial day:", initial_comb_1.day)
-        print("lista giorni possibili:", [i for i in range(n_days) if i != initial_comb_1.day])
+        # print("n_days:", n_days)
+        # print("initial day:", initial_comb_1.day)
+        # print("lista giorni possibili:", [i for i in range(n_days) if i != initial_comb_1.day])
 
         day_i2 = random.choice([i for i in range(n_days) if i != initial_comb_1.day])
         vehicle_i2 = random.choice([i for i in range(n_vehicles) if i != initial_comb_1.vehicle])
@@ -1669,13 +1838,19 @@ def f_swap_operation(
         new_solution = 0
         return (False, new_solution)
 
+    print(f"before:\n {current_solution.assigned_ordered_matrix}")
+
     ''' Main operation '''
-    new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, current_solution, initial_comb, final_comb)    
+    new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, initial_solution, current_solution, initial_comb, final_comb)    
+
+    print("after main operation:\n", new_solution.assigned_ordered_matrix)
 
     ''' Linked combinations '''
     # remove:
     new_solution = remove_linked_comb(data, neigh_order, neighbour, initial_comb, final_comb, new_solution, linked_combinations)
     
+    print("after removing linked combo:\n", new_solution.assigned_ordered_matrix)
+
     # add clients of selected combos
     for comb_vehicle, comb_day in linked_combinations[1]:
         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = \
@@ -1685,7 +1860,9 @@ def f_swap_operation(
         (new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix) = \
                 add_client(data, new_solution.assigned_ordered_matrix, new_solution.transp_demand_matrix, 
                            comb_day, comb_vehicle, initial_comb.comb_2.client)
-        
+    
+    print("after adding linked combo:\n", new_solution.assigned_ordered_matrix)
+    
     # optimize routes
     for comb_vehicle, comb_day in linked_combinations[0]:
         (new_solution.route_dist_matrix, new_solution.assigned_ordered_matrix) = \
@@ -1699,7 +1876,7 @@ def f_swap_operation(
                                     comb_vehicle, comb_day)
 
     # calculate new OBJ:
-    new_tot_dist = calculate_tot_dist (n_vehicles, n_days, new_solution.route_dist_matrix)
+    new_solution.tot_dist = calculate_tot_dist (n_vehicles, n_days, new_solution.route_dist_matrix)
 
     # Update similarity matrix and calculate similarity value
     if sim_type in ["sim_1", "sim_2", "sim_3"]:
@@ -1715,13 +1892,13 @@ def f_swap_operation(
                     comb_day
                 )
 
-        new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
+        new_solution.sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
             measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_solution.sim_matrix)
 
 
     ''' Calculate OBJ value '''
-    new_dist_value = new_tot_dist/initial_solution.tot_dist
-    new_dissim_value  = 1-new_sim_value
+    new_dist_value = new_solution.tot_dist/initial_solution.tot_dist
+    new_dissim_value  = 1-new_solution.sim_value
     new_solution.OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
     return new_solution
@@ -2295,7 +2472,7 @@ def complete_new_solution(sim_type, weights, neigh_order, neighbour,
                         )
 
             new_sim_value, sim_combinations_matrix, sim_vehicle_pairings, sim_measures = \
-                measure_func(n_vehicles, n_days, current_solution.sim_matrix, new_solution.sim_matrix)
+                measure_func(n_vehicles, n_days, initial_solution.sim_matrix, new_solution.sim_matrix)
 
     
     ''' Calculate OBJ value '''
@@ -2311,7 +2488,7 @@ def complete_new_solution(sim_type, weights, neigh_order, neighbour,
 
 
 
-# SECONDARY FUNCTIONS 
+''' SECONDARY FUNCTIONS '''
 
 def find_client_combos(neigh_order, neighbour, n_days, n_vehicles, data, current_solution, initial_comb):
 
@@ -2995,6 +3172,25 @@ def find_choose_linked_comb(n_days, selected_schedule, possible_combinations, fi
     return selected_combinations
 
 
+def crete_new_sol_empty(sim_type, n_vehicles, n_days, n_clients, max_clients_kd):
 
+    assigned_ordered_matrix = np.zeros((n_vehicles, n_days, max_clients_kd+2), dtype=int)
+    not_assigned_list = np.zeros((n_clients), dtype=int)
+    transp_demand_matrix = np.zeros((n_vehicles, n_days), dtype=int)
+    route_dist_matrix = np.zeros((n_vehicles, n_days), dtype=float)
+    OBJ_value = 0
+    tot_dist = 0
+    sim_value = 0
+
+    if sim_type == "sim_1":
+        sim_matrix = np.empty(n_vehicles, dtype=object)
+    else:
+        sim_matrix = np.empty((n_vehicles, n_days), dtype=object)
+
+    new_solution = Solution_multiOBJ(OBJ_value, tot_dist, sim_value, 
+                                     assigned_ordered_matrix, not_assigned_list, transp_demand_matrix, route_dist_matrix, sim_matrix)
+
+    
+    return new_solution
 
 

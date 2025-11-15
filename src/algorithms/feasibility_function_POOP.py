@@ -266,7 +266,8 @@ def verify_distance(n_vehicles, n_days, n_clients, routes_matrix, distance_matri
 
             if not np.isclose(V_distances_matrix[v, d], route_dist_matrix[v, d], 1e-06, 1e-06):
                 solution.verification_vector.verif_dist = False
-                print(f"Total distance of vehicle {v} in the day {d} is wrong")
+                print(f"Total distance of vehicle {v} in the day {d} is wrong", flush=True)
+                print(f"correct: {V_distances_matrix[v, d]}\n in the solution: {route_dist_matrix[v, d]}")
                 # print(V_distances_matrix[v, d] - route_dist_matrix[v, d])
 
             # else:
@@ -301,7 +302,7 @@ def verify_load(data, n_vehicles, n_days, n_clients, max_clients_kd, routes_matr
 
             if V_loads_matrix[v, d] != transp_demand_matrix[v, d]:
                 solution.verification_vector.verif_load = False
-                # print(f"Total load of vehicle {v} in the day {d} is wrong")
+                print(f"Total load of vehicle {v} in the day {d} is wrong")
 
             # else:
             #     solution.verification_vector.verif_load = True

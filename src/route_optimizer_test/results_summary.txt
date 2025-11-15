@@ -1,6 +1,6 @@
 ===== RISULTATI CUMULATIVI =====
              pos1  pos2  pos3  pos4
-dist_2opt     373   146    18     5
-dist_3opt      81    37    54     6
-dist_2_3opt   539     8     1     0
-dist_3_2opt   103    20    55     0
+dist_2opt     350   136    45    11
+dist_3opt      57    43    43    35
+dist_2_3opt   497    48     3     0
+dist_3_2opt   446    91    10     0

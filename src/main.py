@@ -47,7 +47,7 @@ def main():
 
     # VND parameters
     repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
-    time_limit_VND = 5 #(2*60*60)   # 2h*60min*60sec = 7200sec
+    time_limit_VND = 120 #(2*60*60)   # 2h*60min*60sec = 7200sec
     max_iteration_neigh = 100
     ws_counter_limit = 20
     worse_sol_percentage = 0.15
@@ -55,7 +55,8 @@ def main():
     # neigh_order = ["k_move_t", "t_move_k", "move_kt", "move_t", 
     #               "k_swap_t", "t_swap_k", "f_swap_kt", "swap_kt", "f_swap_t", "swap_t", 
     #               "t_swap_r_k", "t_multiswap_k"]
-    neigh_order = ["t_multiswap_k"]
+    neigh_order = ["swap_t"]
+    # lista rimossi con errori: "f_swap_kt", "f_swap_t", 2-3-opt 
 
     # A-VND parameters ---------------------------------- 
     initial_score = 3
