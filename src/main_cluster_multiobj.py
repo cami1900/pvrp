@@ -237,8 +237,8 @@ def multi_obj_solver(output_path,
     utils.plot_save_all_OBJ_iteration_graph(solution_history, path_graph_i_new_opt) # plot_save_all_OBJ_iteration_graph or plot_save_iteration_graph
     utils.plot_save_time_graph(solution_history, path_graph_t_new_opt)
 
-    utils.plot_save_vehi_routes(n_vehicles, n_days, data, solution_1.assigned_ordered_matrix, path_img_v_new_opt)
-    utils.plot_save_day_routes(n_vehicles, n_days, data, solution_1.assigned_ordered_matrix, path_img_d_new_opt)
+    utils.plot_save_vehi_routes(n_vehicles, n_days, data, best_solution.assigned_ordered_matrix, path_img_v_new_opt)
+    utils.plot_save_day_routes(n_vehicles, n_days, data, best_solution.assigned_ordered_matrix, path_img_d_new_opt)
 
     return 
 

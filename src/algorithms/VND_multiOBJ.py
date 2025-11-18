@@ -68,9 +68,6 @@ def AVND_multiOBJ_algorithm(
                 neigh_order[neigh] == "t_swap_r_k"):
                 score_neigh[neigh] = 0
     
-    # time
-    start_time_VND = time.time()
-    # start_time_neigh = time.process_time()
 
     # save initial data
     solution_history.append((
@@ -91,13 +88,18 @@ def AVND_multiOBJ_algorithm(
     log_every_sec = 5 # seconds
     log_every_counter = 1
 
-    current_time = start_time_VND
-    while (current_time - start_time_VND) < time_limit_VND:
-        current_time = time.time()
-        
+    # time
+    # start_time_VND = time.time()
+    # # start_time_neigh = time.process_time()
+    # current_time = start_time_VND
+    # while (current_time - start_time_VND) < time_limit_VND:
+    #     current_time = time.time()
+    start_time_VND = time.time()
+    while time.time() - start_time_VND < time_limit_VND:
+
         # Check if it's time to log progress
-        if (current_time - start_time_VND) >= (log_every_sec * log_every_counter):
-            log_progress(instance_number, current_time, start_time_VND, time_limit_VND)
+        if (time.time() - start_time_VND) >= (log_every_sec * log_every_counter):
+            log_progress(instance_number, time.time(), start_time_VND, time_limit_VND)
             log_every_counter += 1
 
         ''' choose neighborhood '''
@@ -228,7 +230,9 @@ def AVND_multiOBJ_algorithm(
         # print(score_neigh[neighbour])
 
         ''' update solution history '''
-        elapsed_time = time.process_time() - start_time_VND
+        # elapsed_time = time.process_time() - start_time_VND
+        elapsed_time = time.time() - start_time_VND
+
 
         solution_history.append((
             best_solution.OBJ_value,
