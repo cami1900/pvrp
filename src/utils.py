@@ -1065,10 +1065,44 @@ def save_initial_solution_in_txt(instance_number, n_vehicles, n_clients, n_days,
 
 
 
-def save_opt_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
-                             optimised_solution, 
-                             solution_history, neigh_out_parameters, 
-                             neigh_order, max_iteration_neigh, time_limit_VND):
+def save_refined_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
+                             solution,  
+                             total_time):
+
+    # Save results in a .txt file
+    lines = []
+    lines.append(f"{instance_number}")
+    lines.append(f"{n_vehicles} {n_clients-1} {n_days} {vehicle_capacity}")
+    lines.append(f"{total_time}")
+    lines.append("")
+    
+    lines.append(f"{solution.OBJ_value}")
+    lines.append(f"{solution.tot_dist}")
+    lines.append(f"{solution.sim_value}")
+    lines.append("")
+
+
+    lines.append("Assigned customers matrix:")
+    for vehicle_k, vehicle in enumerate(solution.assigned_ordered_matrix):
+        lines.append(f"Vehicle {vehicle_k}:")
+        for day_t, route in enumerate(vehicle):
+            lines.append(f"{' '.join(map(str, route))}")
+        lines.append("")  # Riga vuota tra veicoli
+
+    lines.append("Transported demand matrix:")
+    lines += [' '.join(map(str, row)) for row in solution.transp_demand_matrix]
+    lines.append("")
+
+    lines.append("Routes distance matrix:")
+    lines += [' '.join(map(str, row)) for row in solution.route_dist_matrix]
+    lines.append("")
+   
+    return '\n'.join(lines)
+
+
+
+def save_history_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
+                             solution_history):
 
     # Save results in a .txt file
     lines = []
@@ -1076,33 +1110,8 @@ def save_opt_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, veh
     lines.append(f"{n_vehicles} {n_clients-1} {n_days} {vehicle_capacity}")
     lines.append("")
 
-    lines.append(f"{optimised_solution.tot_dist}")
-    # lines.append(f"{total_time}")
-    lines.append(f"{max_iteration_neigh} {time_limit_VND}")
-    lines.append("Neighbourhoods:")
-    lines.append(' '.join(map(str, neigh_order)))
-    lines += [' '.join(map(str, parameter)) for parameter in neigh_out_parameters]
-    lines.append("")
-
-    # lines.append("Assigned ordered matrix of clients:")
-    # lines += [' '.join(map(str, row)) for row in new_vnd_best_solution.assigned_ordered_matrix]
-    # lines.append((format_assigned_matrix(new_vnd_best_solution.assigned_ordered_matrix)))
-    lines.append("Assigned customers matrix:")
-    for vehicle_k, vehicle in enumerate(optimised_solution.assigned_ordered_matrix):
-        lines.append(f"Vehicle {vehicle_k}:")
-        for day_t, route in enumerate(vehicle):
-            lines.append(f"{' '.join(map(str, route))}")
-        lines.append("")  # Riga vuota tra veicoli
-
-    lines.append("Transported demand matrix:")
-    lines += [' '.join(map(str, row)) for row in optimised_solution.transp_demand_matrix]
-    lines.append("")
-
-    lines.append("Routes distance matrix:")
-    lines += [' '.join(map(str, row)) for row in optimised_solution.route_dist_matrix]
-    lines.append("")
-
     lines.append("Solution history:")
+    lines.append("B_obj   B_dis   B_sim   C_obj   C_dis   C_sim   neighbor   iterations   time   scores")
     lines += [' '.join(map(str, row)) for row in solution_history]
 
     return '\n'.join(lines)
@@ -1391,7 +1400,7 @@ def plot_save_iteration_graph(solution_history, graphname_outdir):
     return
 
 
-def plot_save_all_OBJ_iteration_graph(solution_history, graphname_outdir):
+def plot_save_all_OBJ_iteration_graph(solution_history, initial_tot_dist, graphname_outdir):
 
     """
     Crea un grafico dell'andamento della funzione obiettivo per il VND,
@@ -1422,29 +1431,29 @@ def plot_save_all_OBJ_iteration_graph(solution_history, graphname_outdir):
     for repetition in solution_history:
 
         # Asse X — iterazioni cumulative
-        iter_index += repetition[5]
+        iter_index += repetition[7]
         iter_total.append(iter_index)
 
         # Asse Y — valori da plottare
         obj_values.append(repetition[0])
-        dist_values.append(repetition[1])
+        dist_values.append(repetition[1]/initial_tot_dist)
         sim_values.append(repetition[2])
 
     # ===== PLOT =====
     plt.figure(figsize=(17, 6))
 
     # OBJ value
-    plt.plot(iter_total, obj_values, marker='o', label='OBJ value')
+    plt.plot(iter_total, obj_values, label='OBJ value')         # marker='o',
 
     # Distanza totale
-    plt.plot(iter_total, dist_values, marker='s', label='Total Distance')
+    plt.plot(iter_total, dist_values, label='Total Distance')   # marker='s',
 
     # Similarità
-    plt.plot(iter_total, sim_values, marker='^', label='Similarity Value')
+    plt.plot(iter_total, sim_values, label='Similarity Value')  # marker='^',
 
-    plt.xlabel('Total Iterations')
-    plt.ylabel('Metrics')
-    plt.title('AVND Multi-Objective Metrics Progression')
+    plt.xlabel('Iterations')
+    plt.ylabel('Objective values')
+    plt.title('AVND Multi-Objective Objectives Progression')
 
     plt.legend()
     plt.grid(True)
@@ -1481,7 +1490,7 @@ def plot_save_time_graph(solution_history, graphname_outdir):
 
     for repetition in solution_history:
         # aggiorna tempo cumulativo
-        cumulative_time += repetition[6]
+        cumulative_time += repetition[8]
         time_total.append(cumulative_time)
 
         # valore obiettivo (best solution)

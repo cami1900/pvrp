@@ -75,12 +75,13 @@ def AVND_multiOBJ_algorithm(
     best_solution.tot_dist,
     best_solution.sim_value,
     current_solution.OBJ_value,
+    current_solution.tot_dist,
+    current_solution.sim_value,
     0,
     0,
     0,
     *score_neigh
     ))
-
 
     ''' VND ALGORITHM: -------------------------------------------------------------------------------------------------------------------------------------------'''
 
@@ -137,6 +138,7 @@ def AVND_multiOBJ_algorithm(
 
             ''' feasibility check '''
             # verify is new solution is feasible
+            print("neighborhood:", neigh_order[neighbour])
             V_distances_matrix, V_loads_matrix, new_solution = \
                 algorithms.feasibility_function_POOP.check_feasibility_pvrp(
                     n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
@@ -239,6 +241,8 @@ def AVND_multiOBJ_algorithm(
             best_solution.tot_dist,
             best_solution.sim_value,
             current_solution.OBJ_value,
+            current_solution.tot_dist,
+            current_solution.sim_value,
             neigh_order[neighbour],
             total_run,
             elapsed_time,
@@ -1845,7 +1849,8 @@ def f_swap_operation(
     # print(f"before:\n {current_solution.assigned_ordered_matrix}")
 
     ''' Main operation '''
-    new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, initial_solution, current_solution, initial_comb, final_comb)    
+    new_solution = swap_operation(sim_type, weights, n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
+                                  initial_solution, current_solution, initial_comb, final_comb)    
 
     # print("after main operation:\n", new_solution.assigned_ordered_matrix)
 

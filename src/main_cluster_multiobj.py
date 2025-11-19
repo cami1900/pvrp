@@ -30,7 +30,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' SETTINGS -------------------------------------------------------------------------------------------------------'''
 
-MAX_WORKERS = 4     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
+MAX_WORKERS = 1     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
 
 # Directory
 input_dir_base = "data"
@@ -39,7 +39,7 @@ output_dir = "out/results/AVND_multiobj"       # Create new folder to avoid over
 
 # instances
 first_file = 1  #1
-last_file = 8   #32
+last_file = 12   #32
 
 distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
@@ -47,7 +47,7 @@ distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 max_iter_vrp = 500
 
 # similarity
-similarity_measures = ["sim_1", "sim_2", "sim_3"]
+similarity_measures = ["sim_1", "sim_2", "sim_3"]   # "sim_1", "sim_2", "sim_3"
 weights = [0.5, 0.5]
 
 # VND parameters
@@ -61,6 +61,7 @@ worse_sol_percentage = 0.15
 neigh_order = ["t_move_k", "move_t", 
                "t_swap_k", "f_swap_t", "swap_t", 
                "t_swap_r_k", "t_multiswap_k"]
+
 
 # A-VND parameters ---------------------------------- 
 initial_score = 3
@@ -126,7 +127,7 @@ def initial_solution_solver(output_path, instance_number, data, sorted_data, pat
     total_time = time.process_time() - start_time
 
     # '''VND ALGORITHM'''
-
+    '''
     # max_neighbour = (len(neigh_order) -1)
 
     # tot_rep_VND = (repetitions_VND[0] + repetitions_VND[1])
@@ -151,6 +152,7 @@ def initial_solution_solver(output_path, instance_number, data, sorted_data, pat
     #     instance_number)
 
     # total_time = time.process_time() - start_time
+    '''
 
     ''' ------------------------------ SAVE RESULTS ------------------------------- '''
 
@@ -167,11 +169,11 @@ def initial_solution_solver(output_path, instance_number, data, sorted_data, pat
     return solution_1
 
 
-def multi_obj_solver(output_path,
-                     n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data, sorted_data,
+def multi_obj_solver(n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data, sorted_data,
                      distance_matrix, distance_matrix_adjusted, closeness_matrix,
                      instance_number,
                      sim_type, weights, solution_1, sol_base,
+                     path_sol_new_opt, path_history_new_opt,
                      path_graph_i_new_opt, path_graph_t_new_opt,
                      path_img_v_new_opt, path_img_d_new_opt):
 
@@ -205,7 +207,7 @@ def multi_obj_solver(output_path,
                                                  sol_base.assigned_ordered_matrix, sol_base.not_assigned_list, 
                                                  sol_base.transp_demand_matrix, sol_base.route_dist_matrix,
                                                  sim_matrix_base)
-    current_solution = initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_new, sim_value,
+    current_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_new, sim_value,
                                                  solution_1.assigned_ordered_matrix, solution_1.not_assigned_list, 
                                                  solution_1.transp_demand_matrix, solution_1.route_dist_matrix,
                                                  sim_matrix_new)
@@ -213,6 +215,7 @@ def multi_obj_solver(output_path,
 
 
     ''' AVND with multi-OBJ '''
+    start_time = time.process_time()
 
     (best_solution, solution_history, neigh_out_parameters) = AVND_multiOBJ_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
@@ -225,22 +228,28 @@ def multi_obj_solver(output_path,
         instance_number,
         sim_type, weights)
     
+    total_time = time.process_time() - start_time
+
 
     ''' save results '''
-    solution_txt = utils.save_opt_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
-                                                    best_solution, 
-                                                    solution_history, neigh_out_parameters, 
-                                                    neigh_order, max_iteration_neigh, time_limit_VND)
-    with open(output_path, 'w') as f:
+    solution_txt = utils.save_refined_solution_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity, 
+                                                        best_solution, 
+                                                        total_time)
+    with open(path_sol_new_opt, 'w') as f:
         f.write(solution_txt)
 
-    utils.plot_save_all_OBJ_iteration_graph(solution_history, path_graph_i_new_opt) # plot_save_all_OBJ_iteration_graph or plot_save_iteration_graph
+    history_txt = utils.save_history_in_txt(instance_number, n_vehicles, n_clients, n_days, vehicle_capacity,  
+                                            solution_history)
+    with open(path_history_new_opt, 'w') as f:
+        f.write(history_txt)
+
+    utils.plot_save_all_OBJ_iteration_graph(solution_history, initial_solution.tot_dist, path_graph_i_new_opt) # plot_save_all_OBJ_iteration_graph or plot_save_iteration_graph
     utils.plot_save_time_graph(solution_history, path_graph_t_new_opt)
 
     utils.plot_save_vehi_routes(n_vehicles, n_days, data, best_solution.assigned_ordered_matrix, path_img_v_new_opt)
     utils.plot_save_day_routes(n_vehicles, n_days, data, best_solution.assigned_ordered_matrix, path_img_d_new_opt)
 
-    return 
+    return best_solution
 
 
 def similarity_solver(output_path, instance_number, n_vehicles, n_days, base_solution, new_solution):
@@ -279,7 +288,8 @@ def similarity_solver(output_path, instance_number, n_vehicles, n_days, base_sol
 def instance_solver(filename):
 
     # seed
-    seed = 42 
+    # seed = 42 
+    seed = 43
     random.seed(seed)
     np.random.seed(seed)
     random2.seed(seed)
@@ -346,33 +356,43 @@ def instance_solver(filename):
     print(f"{filename}: new solution found")
 
 
+    ''' SIMILARITY '''
+    path_results_similarity = os.path.join(output_dir_instance, filename + "_all_sim_initial" + ".txt")
+    # Solve similarity
+    similarity_solver(path_results_similarity, instance_number, n_vehicles, n_days, sol_base, sol_new)
+    print(f"{filename}: similarity measures calculated")
+
+
     ''' AVND multi-objective '''
 
     for sim_type in similarity_measures:
-        path_results_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + ".txt")
+        path_sol_new_opt = os.path.join(output_dir_instance, filename + "_sol_" + sim_type + ".txt")
+        path_history_new_opt = os.path.join(output_dir_instance, filename + "_hist_" + sim_type + ".txt")
         path_graph_i_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + "_graph_i" + ".jpg")
         path_graph_t_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + "_graph_t" + ".jpg")
         path_img_v_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + "_img_v" + ".jpg")
         path_img_d_new_opt = os.path.join(output_dir_instance, filename + "_" + sim_type + "_img_bt" + ".jpg")
 
-        multi_obj_solver(path_results_new_opt,
-                     n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, data_new, sorted_data_new,
-                     distance_matrix, distance_matrix_adjusted, closeness_matrix,
-                     instance_number,
-                     sim_type, weights, sol_new, sol_base,
-                     path_graph_i_new_opt, path_graph_t_new_opt,
-                     path_img_v_new_opt, path_img_d_new_opt)
+        best_solution = multi_obj_solver(n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_capacity, 
+                                         data_new, sorted_data_new,
+                                         distance_matrix, distance_matrix_adjusted, closeness_matrix,
+                                         instance_number,
+                                         sim_type, weights, sol_new, sol_base,
+                                         path_sol_new_opt, path_history_new_opt,
+                                         path_graph_i_new_opt, path_graph_t_new_opt,
+                                         path_img_v_new_opt, path_img_d_new_opt)
+
 
         # Se la funzione ha restituito una stringa di errore, esci subito
         if isinstance(sol_new, str):
             print(sol_new.strip())
             return  # <-- fermati, non calcolare la similarità
         
-        path_results_similarity = os.path.join(output_dir_instance, filename + "_all_sim_" + sim_type + ".txt")
 
         ''' SIMILARITY '''
+        path_results_similarity = os.path.join(output_dir_instance, filename + "_all_" + sim_type + ".txt")
         # Solve similarity
-        similarity_solver(path_results_similarity, instance_number, n_vehicles, n_days, sol_base, sol_new)
+        similarity_solver(path_results_similarity, instance_number, n_vehicles, n_days, sol_base, best_solution)
         print(f"{filename}: similarity measures calculated")
 
     return filename

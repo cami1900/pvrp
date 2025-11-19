@@ -92,12 +92,24 @@ def check_feasibility_pvrp(n_vehicles, n_days, n_clients, data, max_clients_kd, 
             for vehicle in range(n_vehicles):
                 visits_per_day += Ci_assign_matrix[vehicle, day]
             period_schedule[day] = visits_per_day 
+
+        # if a client is assigned more than 1 time at that day -> error
+        if any(day_in_period > 1 for day_in_period in period_schedule): 
+            solution.feasibility_vector.constr_2 = False
+            continue   # o break
+
+        # check if actual schedule is in possible schedules: 
         # actual_schedule = int(''.join(map(str, period_schedule)), 2)
         actual_schedule = int(''.join(str(b) for b in period_schedule), 2)
         possible_schedules = data[client_i, conf.VISIT_START_INDEX:]
+        possible_schedules = data[client_i, conf.VISIT_START_INDEX:]
 
-        if any(day_in_period > 1 for day_in_period in period_schedule) or not np.intersect1d(actual_schedule, possible_schedules).size:
+        if not np.intersect1d(actual_schedule, possible_schedules).size:    # schedule does NOT correspond
             solution.feasibility_vector.constr_2 = False
+
+        # OLD version with mistake:
+        # if any(day_in_period > 1 for day_in_period in period_schedule) or not np.intersect1d(actual_schedule, possible_schedules).size:
+        #     solution.feasibility_vector.constr_2 = False
 
 
         # CONSTR 4: for each client i there must be an outing arc (i, j)
