@@ -30,7 +30,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' SETTINGS -------------------------------------------------------------------------------------------------------'''
 
-MAX_WORKERS = 1     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
+MAX_WORKERS = 4     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
 
 # Directory
 input_dir_base = "data"

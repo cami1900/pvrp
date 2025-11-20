@@ -138,7 +138,7 @@ def AVND_multiOBJ_algorithm(
 
             ''' feasibility check '''
             # verify is new solution is feasible
-            print("neighborhood:", neigh_order[neighbour])
+            # print("neighborhood:", neigh_order[neighbour])
             V_distances_matrix, V_loads_matrix, new_solution = \
                 algorithms.feasibility_function_POOP.check_feasibility_pvrp(
                     n_vehicles, n_days, n_clients, data, max_clients_kd, vehicle_capacity, distance_matrix, new_solution)
