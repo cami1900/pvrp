@@ -28,7 +28,7 @@ def AVND_multiOBJ_algorithm(
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
         distance_matrix, distance_matrix_adjusted, closeness_matrix, 
         initial_solution, current_solution, best_solution, 
-        time_limit_VND, 
+        time_limit_VND, max_no_improve_time ,
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
         initial_score, rewards_values,
@@ -96,13 +96,21 @@ def AVND_multiOBJ_algorithm(
     # while (current_time - start_time_VND) < time_limit_VND:
     #     current_time = time.time()
     start_time_VND = time.time()
+    last_improvement_time = time.time()
+    last_best_OBJ = best_solution.OBJ_value
+
     while time.time() - start_time_VND < time_limit_VND:
 
+        # stop if NO improvement after max_no_improve_time
+        if (time.time() - last_improvement_time) > max_no_improve_time:
+                print(f"Early stopping [p{instance_number}]: best solution unchanged for {max_no_improve_time} sec")
+                break
+        
         # Check if it's time to log progress
         if (time.time() - start_time_VND) >= (log_every_sec * log_every_counter):
             log_progress(instance_number, time.time(), start_time_VND, time_limit_VND)
             log_every_counter += 1
-
+        
         ''' choose neighborhood '''
         neighbour = choose_neigh(probability_neigh, neigh_order)
         # print(f"\n*****************\nneighbour: {neigh_order[neighbour]}\n*****************\n")
@@ -163,6 +171,10 @@ def AVND_multiOBJ_algorithm(
                     iteration = max_iteration_neigh + 1
                     # iteration += 1
                     total_run += 1
+
+                    # aggiorna tempo/contatore di miglioramento
+                    last_improvement_time = time.time()
+                    last_best_OBJ = best_solution.OBJ_value
 
                 # if NS in better than CS (1):
                 elif new_solution.OBJ_value < current_solution.OBJ_value: 
@@ -1842,9 +1854,15 @@ def f_swap_operation(
         linked_combinations):
     
     # it should be true if clients have same grequency, as they are supposed to have
-    if len(linked_combinations[0]) != len(linked_combinations[0]):
+    if len(linked_combinations[0]) != len(linked_combinations[1]):
         new_solution = 0
         return (False, new_solution)
+    # print("\n\n")
+    # print("client_1", initial_comb.comb_1.client)
+    # print("client_2", initial_comb.comb_2.client)
+
+    # print("linked_1", linked_combinations[0])
+    # print("linked_2", linked_combinations[1])
 
     # print(f"before:\n {current_solution.assigned_ordered_matrix}")
 

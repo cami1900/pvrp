@@ -39,7 +39,7 @@ output_dir = "out/results/AVND_multiobj"       # Create new folder to avoid over
 
 # instances
 first_file = 1  #1
-last_file = 12   #32
+last_file = 32   #32
 
 distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
@@ -53,6 +53,7 @@ weights = [0.5, 0.5]
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
 time_limit_VND = 1.5*60*60 #(2*60*60)   # 2h*60min*60sec = 7200sec
+max_no_improve_time = 60*60
 max_iteration_neigh = 100
 ws_counter_limit = 20
 worse_sol_percentage = 0.15
@@ -61,7 +62,7 @@ worse_sol_percentage = 0.15
 neigh_order = ["t_move_k", "move_t", 
                "t_swap_k", "f_swap_t", "swap_t", 
                "t_swap_r_k", "t_multiswap_k"]
-
+# neigh_order = ["f_swap_t"]
 
 # A-VND parameters ---------------------------------- 
 initial_score = 3
@@ -195,19 +196,24 @@ def multi_obj_solver(n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_cap
 
         sim_matrix_new = def_funcs(n_vehicles, n_days, solution_1.assigned_ordered_matrix)
         sim_matrix_base = def_funcs(n_vehicles, n_days, sol_base.assigned_ordered_matrix)
+        (sim_value_new, _, _, _ )= measure_func(n_vehicles, n_days, sim_matrix_base, sim_matrix_new)
         
     # Calculate OBJ value 
-    tot_dist_new = solution_1.OBJ_tot_dist
     tot_dist_base = sol_base.OBJ_tot_dist
-    sim_value  = 1.0
-    OBJ_value = 1.0  
+    sim_value_base  = 1.0
+    OBJ_value_base = 1.0  
+
+    tot_dist_new = solution_1.OBJ_tot_dist
+    dist_value_new = tot_dist_new/tot_dist_base
+    dissim_value_new  = 1-sim_value_new
+    OBJ_value_new = ((weights[0] * dist_value_new) + (weights[1] * dissim_value_new))
     
     # save solution
-    initial_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_base, sim_value,
+    initial_solution = classes.Solution_multiOBJ(OBJ_value_base, tot_dist_base, OBJ_value_base,
                                                  sol_base.assigned_ordered_matrix, sol_base.not_assigned_list, 
                                                  sol_base.transp_demand_matrix, sol_base.route_dist_matrix,
                                                  sim_matrix_base)
-    current_solution = classes.Solution_multiOBJ(OBJ_value, tot_dist_new, sim_value,
+    current_solution = classes.Solution_multiOBJ(OBJ_value_new, tot_dist_new, sim_value_new,
                                                  solution_1.assigned_ordered_matrix, solution_1.not_assigned_list, 
                                                  solution_1.transp_demand_matrix, solution_1.route_dist_matrix,
                                                  sim_matrix_new)
@@ -221,7 +227,7 @@ def multi_obj_solver(n_vehicles, n_days,  n_clients, max_clients_kd, vehicle_cap
         n_vehicles, n_days, n_clients, max_clients_kd, vehicle_capacity, data, sorted_data, 
         distance_matrix, distance_matrix_adjusted, closeness_matrix, 
         initial_solution, current_solution, best_solution, 
-        time_limit_VND, 
+        time_limit_VND, max_no_improve_time , 
         neigh_order, max_neighbour, max_iteration_neigh, ws_counter_limit, 
         worse_sol_percentage, 
         initial_score, rewards_values,
@@ -288,8 +294,8 @@ def similarity_solver(output_path, instance_number, n_vehicles, n_days, base_sol
 def instance_solver(filename):
 
     # seed
-    # seed = 42 
-    seed = 43
+    seed = 42 
+    # seed = 43
     random.seed(seed)
     np.random.seed(seed)
     random2.seed(seed)

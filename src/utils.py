@@ -1490,8 +1490,10 @@ def plot_save_time_graph(solution_history, graphname_outdir):
 
     for repetition in solution_history:
         # aggiorna tempo cumulativo
-        cumulative_time += repetition[8]
-        time_total.append(cumulative_time)
+        # cumulative_time += repetition[8]
+        # time_total.append(cumulative_time)
+        time_total.append(repetition[8])
+
 
         # valore obiettivo (best solution)
         obj_values.append(repetition[0])
