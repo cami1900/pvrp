@@ -30,16 +30,16 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' SETTINGS -------------------------------------------------------------------------------------------------------'''
 
-MAX_WORKERS = 1     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
+MAX_WORKERS = 4     # Maximum number of cores to use (change as desired) --> CLUSTER: max = 4
 
 # Directory
 input_dir_base = "data"
 input_dir_new  = "data_new"     # To create a new dataset, create a folder and rename path
-output_dir = "out/results/AVND_multiobj"       # Create new folder to avoid overwriting results and rename path
+output_dir = "out/results/AVND_multiobj_75_25"       # Create new folder to avoid overwriting results and rename path
 
 # instances
-first_file = 2  #1
-last_file = 2   #32
+first_file = 1  #1
+last_file = 32   #32
 
 distance_type = 1       # select: Euclidean = 1, Manhattan = 2 (NOT use!!)
 
@@ -48,7 +48,7 @@ max_iter_vrp = 500
 
 # similarity
 similarity_measures = ["sim_1", "sim_2", "sim_3"]   # "sim_1", "sim_2", "sim_3"
-weights = [0.5, 0.5]
+weights = [0.75, 0.25]
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
