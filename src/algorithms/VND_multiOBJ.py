@@ -636,16 +636,18 @@ def define_neighboring_solution(
     # print("\n\nlinked_combinations: **********************\n", linked_combinations)
     # feasible
     if schedule_index == True:
-        new_solution = do_operation(
+        (error_index, new_solution) = do_operation(
             sim_type, weights, neighbour, neigh_order, 
             n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
             initial_solution, current_solution, initial_comb_main, final_comb_main, linked_combinations)
+        if error_index == False:
+            return (initial_comb_main, final_comb_main, new_solution, False)
         # print("schedule feasible: OP --> END!")
         return (initial_comb_main, final_comb_main, new_solution, True)
         # (END)
 
     # unfeasible
-    new_solution = do_operation(
+    (error_index, new_solution) = do_operation(
         sim_type, weights, neighbour, neigh_order, 
         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
         initial_solution, current_solution, initial_comb_main, final_comb_main, linked_combinations)
@@ -1580,7 +1582,7 @@ def do_operation_OLD(sim_type, weights, neighbour, neigh_order, n_vehicles, n_da
 
 def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
                  initial_solution, current_solution, initial_comb, final_comb, linked_combinations):
-    
+    error_index = True
     #    ''' MOVE '''
     if (neigh_order[neighbour] == "k_move_t" or 
         neigh_order[neighbour] == "t_move_k" or
@@ -1620,7 +1622,7 @@ def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, 
           neigh_order[neighbour] == "f_swap_t"):
 
         # New solution:
-        new_solution = f_swap_operation(sim_type, weights, neigh_order, neighbour, 
+        (error_index, new_solution) = f_swap_operation(sim_type, weights, neigh_order, neighbour, 
                                         n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
                                         initial_solution, current_solution, initial_comb, final_comb, 
                                         linked_combinations) 
@@ -1636,7 +1638,7 @@ def do_operation(sim_type, weights, neighbour, neigh_order, n_vehicles, n_days, 
             n_vehicles, n_days, data, distance_matrix, closeness_matrix, 
             initial_solution, current_solution, initial_comb, final_comb)
     
-    return new_solution
+    return (error_index, new_solution)
 
 
 def move_operation(
@@ -1928,7 +1930,7 @@ def f_swap_operation(
     new_dissim_value  = 1-new_solution.sim_value
     new_solution.OBJ_value = ((weights[0] * new_dist_value) + (weights[1] * new_dissim_value))
 
-    return new_solution
+    return (True, new_solution)
 
 
 def muliswap_operation(
