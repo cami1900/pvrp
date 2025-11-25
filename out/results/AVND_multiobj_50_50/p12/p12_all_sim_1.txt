@@ -1,0 +1,37 @@
+12
+
+Similarity 1
+0.6808510638297872
+
+Similarity combination matrix:
+0.6818181818181818 0.15151515151515152 0.36363636363636365
+0.234375 0.21875 0.6875
+0.1702127659574468 0.6808510638297872 0.3617021276595745
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0)) (np.int64(1), np.int64(2)) (np.int64(2), np.int64(1))
+0.6818181818181818 0.6875 0.6808510638297872
+
+Similarity 2
+0.0
+
+Similarity combination matrix:
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.02222222222222222 0.0
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0)) (np.int64(1), np.int64(2)) (np.int64(2), np.int64(1))
+0.0 0.0 0.02222222222222222
+
+Similarity 3
+0.0
+
+Similarity combination matrix:
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.025 0.0
+
+Similarity combination pairings:
+(np.int64(0), np.int64(0)) (np.int64(1), np.int64(2)) (np.int64(2), np.int64(1))
+0.0 0.0 0.025
