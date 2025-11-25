@@ -35,7 +35,7 @@ MAX_WORKERS = 4     # Maximum number of cores to use (change as desired) --> CLU
 # Directory
 input_dir_base = "data"
 input_dir_new  = "data_new"     # To create a new dataset, create a folder and rename path
-output_dir = "out/results/AVND_multiobj_50_50"       # Create new folder to avoid overwriting results and rename path
+output_dir = "out/results/AVND_multiobj_25_75"       # Create new folder to avoid overwriting results and rename path
 
 # ********************************************************************
 
@@ -53,7 +53,7 @@ max_iter_vrp = 500
 
 # similarity
 similarity_measures = ["sim_1", "sim_2", "sim_3"]   # "sim_1", "sim_2", "sim_3"
-weights = [0.5, 0.5]
+weights = [0.25, 0.75]
 
 # VND parameters
 repetitions_VND = [1, 0]    # first value indicate repetitons where worse solution is accepted (True), the second where False 
@@ -439,24 +439,9 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     # instance_files = [f"p{str(i).zfill(2)}" for i in range(first_file, last_file+1)]
     instance_files_num = [
-        5,
-        8,
-        10,
-        11,
-        12,
-        13,
         14,
-        17,
-        18,
-        21,
-        22,
-        24,
-        25,
-        27,
-        28,
-        30,
-        31,
-        32    
+        15,
+        16    
     ]
     instance_files = [f"p{str(i).zfill(2)}" for i in instance_files_num]
 
